@@ -1,4 +1,5 @@
 'use strict';
+var _ = require('lodash'); //no directory since dependency
 var Scope = require('../src/scope');
 
 describe("Scope", function() {
@@ -137,7 +138,50 @@ describe("Scope", function() {
         }
       );
 
-      expect(function() { scope.digest(); }).toThrow();
+      expect(function() { scope.digest(); }).toThrow(); //wrapped scope.digest within an anonymous function which should throw
+    });
+
+    it("ends the digest when the last watch is clean", function() {
+      scope.array = _.range(100);
+      var watchExecutions = 0;
+
+      _.times(100, function(i) {
+        scope.$watch(
+          function(scope) {
+            watchExecutions++;
+            return scope.array[i]
+          },
+          function(newValue, oldValue, scope) {
+          }
+        );
+      });
+
+      scope.$digest();
+      expect(watchExecutions).toBe(200); //first 100iterations from newValue != oldValue, next 200 is checking that it's no longer dirty
+
+      scope.array[0] = 420; //force one dirty value, expect 200 iterations again but would like 101 instead
+      scope.$digest();
+      expect(watchExecutions).toBe(301); //200 from before, the 101 from the most recent digest
+    });
+
+    it("does not end digest so that new watches are not run", function() {
+      scope.aValue = 'abc';
+      scope.counter = 0;
+
+      scope.$watch(
+        function(scope) { return scope.aValue; },
+        function(newValue, oldValue, scope) {
+          scope.$watch(
+            function(scope) { return scope.aValue; },
+            function(newValue, oldValue, scope) {
+              scope.counter++;
+            }
+          );
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
     });
   });
 });

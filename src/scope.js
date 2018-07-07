@@ -5,9 +5,10 @@ var _ = require('lodash');
 
 function Scope() {
   this.$$watchers = [];
+  this.$$lastDirtyWatch = null;
 }
 
-function initWatchVal() {};
+function initWatchVal() {}
 
 Scope.prototype.$watch = function(watchFn, listenerFn) {
   var watcher = {
@@ -15,7 +16,8 @@ Scope.prototype.$watch = function(watchFn, listenerFn) {
     listenerFn: listenerFn || function() {},
     last: initWatchVal
   };
-
+  
+  this.$$lastDirtyWatch = null;
   this.$$watchers.push(watcher);
 };
 
@@ -27,11 +29,14 @@ Scope.prototype.$$digestOnce = function() {
     newValue = watcher.watchFn(self);
     oldValue = watcher.last;
     if (newValue !== oldValue) {
+      self.$$lastDirtyWatch = watcher;
       watcher.last = newValue;
       watcher.listenerFn(newValue,
         (oldValue === initWatchVal ? newValue : oldValue),
         self);
       dirty = true;
+    } else if (self.$$lastDirtyWatch === watcher){ //case where the value is no longer dirty
+      return false;
     }
   });
 
@@ -41,12 +46,14 @@ Scope.prototype.$$digestOnce = function() {
 Scope.prototype.$digest = function() {
   var ttl = 10;
   var dirty;
+  this.$$lastDirtyWatch = null; //set to null at the beginning of every digest
+
   do { // runs this at least once
     dirty = this.$$digestOnce();
     if (dirty && !(ttl--)) { // will throw when both values = true. when ttl-- = -1, !-1 is true. ie throws after 10 repeats
       throw "10 digest iterations reached";
     }
   } while (dirty);
-}
+};
 
 module.exports = Scope;
