@@ -39,9 +39,13 @@ Scope.prototype.$$digestOnce = function() {
 };
 
 Scope.prototype.$digest = function() {
+  var ttl = 10;
   var dirty;
   do { // runs this at least once
     dirty = this.$$digestOnce();
+    if (dirty && !(ttl--)) { // will throw when both values = true. when ttl-- = -1, !-1 is true. ie throws after 10 repeats
+      throw "10 digest iterations reached";
+    }
   } while (dirty);
 }
 
