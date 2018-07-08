@@ -71,4 +71,14 @@ Scope.prototype.$eval = function(expr, locals) {
   return expr(this, locals);
 };
 
+//calls $eval and starts $digest
+//run debugger on this
+Scope.prototype.$apply = function(expr) {
+  try {
+    return this.$eval(expr);
+  } finally {
+    this.$digest();
+  }
+};
+
 module.exports = Scope;
