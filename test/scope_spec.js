@@ -87,8 +87,8 @@ describe("Scope", function() {
       var watchFn = jasmine.createSpy().and.returnValue('something');
       scope.$watch(watchFn);
 
-      scope.$digest;
-      expect(watchFn).toHaveBeenCalled;
+      scope.$digest();
+      expect(watchFn).toHaveBeenCalled();
     });
 
     it("triggers chained watchers in the same digest", function() {
@@ -149,7 +149,7 @@ describe("Scope", function() {
         scope.$watch(
           function(scope) {
             watchExecutions++;
-            return scope.array[i]
+            return scope.array[i];
           },
           function(newValue, oldValue, scope) {
           }
@@ -164,7 +164,7 @@ describe("Scope", function() {
       expect(watchExecutions).toBe(301); //200 from before, the 101 from the most recent digest
     });
 
-    it("does not end digest so that new watches are not run", function() {
+    it("does not stop new watches being run by ending digests early", function() {
       scope.aValue = 'abc';
       scope.counter = 0;
 
@@ -184,7 +184,7 @@ describe("Scope", function() {
       expect(scope.counter).toBe(1);
     });
 
-    it("compares based on value if enabled", function() {
+    it("compares based on deep value if enabled", function() {
       scope.aValue = [1, 2, 3];
       scope.counter = 0;
 
@@ -211,7 +211,7 @@ describe("Scope", function() {
       scope.$watch(
         function(scope) { return scope.number; },
         function(newValue, oldValue, scope) {
-          scope.counter++
+          scope.counter++;
         }
       );
 
@@ -247,7 +247,7 @@ describe("Scope", function() {
       scope.counter = 0;
 
       scope.$watch(
-        function(scope) { return scope.aValue },
+        function(scope) { return scope.aValue; },
         function(newValue, oldValue, scope) {
           scope.counter++;
         }
@@ -260,6 +260,76 @@ describe("Scope", function() {
         scope.aValue = "someOtherValue";
       });
       expect(scope.counter).toBe(2);
+    });
+
+    it("executes $evalAsync'ed function later in the same cycle", function() {
+      scope.aValue = [1, 2, 3];
+      scope.aSyncEvaluated = false;
+      scope.aSyncEvaluatedImmediately = false;
+
+      scope.$watch(
+        function(scope) { return scope.aValue; },
+        function(newValue, oldValue, scope) {
+          scope.$evalAsync(function(scope) {
+            scope.aSyncEvaluated = true;
+          });
+          scope.aSyncEvaluatedImmediately = scope.aSyncEvaluated;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.aSyncEvaluated).toBe(true);
+      expect(scope.aSyncEvaluatedImmediately).toBe(false);
+    });
+
+    it("executes $evalAsync'ed functions added by watch functions", function() {
+      scope.aValue = [1, 2, 3];
+      scope.asyncEvaluated = false;
+      scope.$watch(
+        function(scope) {
+          if (!scope.asyncEvaluated) {
+            scope.$evalAsync(function(scope) {
+              scope.asyncEvaluated = true;
+            });
+          }
+          return scope.aValue;
+        },
+        function(newValue, oldValue, scope) { }
+      );
+
+      scope.$digest();
+      expect(scope.asyncEvaluated).toBe(true);
+    });
+
+    it("executes $evalAsync'ed functions even when not dirty", function() {
+      scope.aValue = [1, 2, 3];
+      scope.asyncEvaluatedTimes = 0;
+      scope.$watch(
+        function(scope) {
+          if (scope.asyncEvaluatedTimes < 2) {
+            scope.$evalAsync(function(scope) {
+              scope.asyncEvaluatedTimes++;
+            });
+          }
+          return scope.aValue;
+        },
+          function(newValue, oldValue, scope) { }
+      );
+
+      scope.$digest();
+      expect(scope.asyncEvaluatedTimes).toBe(2);
+    });
+
+    it("eventually halts $evalAsyncs added by watches", function() {
+      scope.aValue = [1, 2, 3];
+      scope.$watch(
+        function(scope) {
+          scope.$evalAsync(function(scope) { });
+          return scope.aValue;
+          },
+        function(newValue, oldValue, scope) { }
+      );
+      expect(function() { scope.$digest(); }).toThrow();
     });
   });
 });

@@ -6,6 +6,7 @@ var _ = require('lodash');
 function Scope() {
   this.$$watchers = [];
   this.$$lastDirtyWatch = null;
+  this.$$asyncQueue = [];
 }
 
 function initWatchVal() {}
@@ -31,7 +32,7 @@ Scope.prototype.$$digestOnce = function() {
     oldValue = watcher.last;
     if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
       self.$$lastDirtyWatch = watcher;
-      watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue) //clone deep creates a deep clone, instead of having the same reference which would ===
+      watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue); //clone deep creates a deep clone, instead of having the same reference which would ===
       watcher.listenerFn(newValue,
         (oldValue === initWatchVal ? newValue : oldValue),
         self);
@@ -50,11 +51,15 @@ Scope.prototype.$digest = function() {
   this.$$lastDirtyWatch = null; //set to null at the beginning of every digest
 
   do { // runs this at least once
+    while (this.$$asyncQueue.length) {
+      var aSyncTask = this.$$asyncQueue.shift();
+      aSyncTask.scope.$eval(aSyncTask.expression);
+    }
     dirty = this.$$digestOnce();
-    if (dirty && !(ttl--)) { // will throw when both values = true. when ttl-- = -1, !-1 is true. ie throws after 10 repeats
+    if ((dirty || this.$$asyncQueue.length) && !(ttl--)) { // will throw when both values = true. when ttl-- = -1, !-1 is true. ie throws after 10 repeats
       throw "10 digest iterations reached";
     }
-  } while (dirty);
+  } while (dirty || this.$$asyncQueue.length);
 };
 
 Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
@@ -62,7 +67,7 @@ Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
     return _.isEqual(newValue, oldValue);
   } else {
     return newValue === oldValue ||
-      (typeof newValue === 'number' && typeof oldValue === 'number' && isNaN(newValue) && isNaN(oldValue)) //if first value falsy, check both values if NaN. if true, return true
+      (typeof newValue === 'number' && typeof oldValue === 'number' && isNaN(newValue) && isNaN(oldValue)); //if first value falsy, check both values if NaN. if true, return true
   }
 };
 
@@ -79,6 +84,13 @@ Scope.prototype.$apply = function(expr) {
   } finally {
     this.$digest();
   }
+};
+
+Scope.prototype.$evalAsync = function(expr) {
+  //note: the new aSyncTask is assigned as properrty the scope, and can access the scope methods from there
+  //on first digest, it puts off the asyncTask for next digest to execute, and runs digestonce
+  //on second digest, it evals the asyncTask, runs digestOnce, realizes nothing has changed, then returns
+  this.$$asyncQueue.push({scope: this, expression: expr});
 };
 
 module.exports = Scope;
