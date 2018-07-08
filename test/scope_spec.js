@@ -220,6 +220,26 @@ describe("Scope", function() {
 
       scope.$digest();
       expect(scope.counter).toBe(1);
-    })
+    });
+
+    it("executes $eval'ed function and returns the result", function() {
+      scope.aValue = 42;
+
+      var result = scope.$eval(function(scope) {
+        return scope.aValue;
+      });
+
+      expect(result).toBe(42);
+    });
+
+    it("passes the second $eval argument straight through", function() {
+      scope.aValue = 42;
+
+      var result = scope.$eval(function(scope, arg) {
+        return scope.aValue + arg;
+      }, 2);
+
+      expect(result).toBe(44);
+    });
   });
 });
