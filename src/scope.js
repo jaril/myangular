@@ -95,20 +95,26 @@ Scope.prototype.$apply = function(expr) {
 
 Scope.prototype.$evalAsync = function(expr) {
   //note: the new aSyncTask is assigned as properrty the scope, and can access the scope methods from there
-  //on first digest, it puts off the asyncTask for next digest to execute, and runs digestonce
-  //on second digest, it evals the asyncTask, runs digestOnce, realizes nothing has changed, then returns
-  this.$$asyncQueue.push({scope: this, expression: expr});
+  var self = this;
+  if (!self.$$phase && !self.$$asyncQueue.length) { //at time of execution, if a digest isnt going on and there's nothing in the queue
+    setTimeout(function() { //something should digest this at some point, but in cast it doesnt, set a reminder to check later
+      if(self.$$asyncQueue.length) { //if there is something in the queue at that point
+        self.$digest(); //run digest()
+      }
+    }, 0);
+  }
+  self.$$asyncQueue.push({scope: this, expression: expr});
 };
 
 Scope.prototype.$beginPhase = function(phase) {
   if (this.$$phase) {
     throw this.$$phase + " already in progress";
   }
-  this.$$phase = phase
-}
+  this.$$phase = phase;
+};
 
 Scope.prototype.$clearPhase = function() {
   this.$$phase = null;
-}
+};
 
 module.exports = Scope;
