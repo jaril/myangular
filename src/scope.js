@@ -7,6 +7,7 @@ function Scope() {
   this.$$watchers = [];
   this.$$lastDirtyWatch = null;
   this.$$asyncQueue = [];
+  this.$$phase = null;
 }
 
 function initWatchVal() {}
@@ -49,6 +50,7 @@ Scope.prototype.$digest = function() {
   var ttl = 10;
   var dirty;
   this.$$lastDirtyWatch = null; //set to null at the beginning of every digest
+  this.$beginPhase("$digest"); // starting digest phase
 
   do { // runs this at least once
     while (this.$$asyncQueue.length) {
@@ -60,6 +62,8 @@ Scope.prototype.$digest = function() {
       throw "10 digest iterations reached";
     }
   } while (dirty || this.$$asyncQueue.length);
+
+  this.$clearPhase();
 };
 
 Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
@@ -78,10 +82,13 @@ Scope.prototype.$eval = function(expr, locals) {
 
 //calls $eval and starts $digest
 //run debugger on this
+//do all the functions passed into apply have to take as argument scope??
 Scope.prototype.$apply = function(expr) {
   try {
+    this.$beginPhase("$apply");
     return this.$eval(expr);
   } finally {
+    this.$clearPhase();
     this.$digest();
   }
 };
@@ -92,5 +99,16 @@ Scope.prototype.$evalAsync = function(expr) {
   //on second digest, it evals the asyncTask, runs digestOnce, realizes nothing has changed, then returns
   this.$$asyncQueue.push({scope: this, expression: expr});
 };
+
+Scope.prototype.$beginPhase = function(phase) {
+  if (this.$$phase) {
+    throw this.$$phase + " already in progress";
+  }
+  this.$$phase = phase
+}
+
+Scope.prototype.$clearPhase = function() {
+  this.$$phase = null;
+}
 
 module.exports = Scope;
