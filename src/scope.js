@@ -32,20 +32,23 @@ Scope.prototype.$$digestOnce = function() {
   var newValue, oldValue, dirty;
 
   _.forEach(this.$$watchers, function(watcher) {
-    newValue = watcher.watchFn(self);
-    oldValue = watcher.last;
-    if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-      self.$$lastDirtyWatch = watcher;
-      watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue); //clone deep creates a deep clone, instead of having the same reference which would ===
-      watcher.listenerFn(newValue,
-        (oldValue === initWatchVal ? newValue : oldValue),
-        self);
-      dirty = true;
-    } else if (self.$$lastDirtyWatch === watcher){ //case where the value is no longer dirty
-      return false;
+    try {
+      newValue = watcher.watchFn(self);
+      oldValue = watcher.last;
+      if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
+        self.$$lastDirtyWatch = watcher;
+        watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue); //clone deep creates a deep clone, instead of having the same reference which would ===
+        watcher.listenerFn(newValue,
+          (oldValue === initWatchVal ? newValue : oldValue),
+          self);
+        dirty = true;
+      } else if (self.$$lastDirtyWatch === watcher){ //case where the value is no longer dirty
+        return false;
+      }
+    } catch (e) {
+      console.error(e);
     }
   });
-
   return dirty;
 };
 
@@ -63,8 +66,12 @@ Scope.prototype.$digest = function() {
 
   do { // runs this at least once
     while (this.$$asyncQueue.length) {
-      var aSyncTask = this.$$asyncQueue.shift();
-      aSyncTask.scope.$eval(aSyncTask.expression);
+      try {
+        var aSyncTask = this.$$asyncQueue.shift();
+        aSyncTask.scope.$eval(aSyncTask.expression);
+      } catch (e) {
+        console.error(e);
+      }
     }
     dirty = this.$$digestOnce();
     if ((dirty || this.$$asyncQueue.length) && !(ttl--)) { // will throw when both values = true. when ttl-- = -1, !-1 is true. ie throws after 10 repeats
@@ -73,7 +80,11 @@ Scope.prototype.$digest = function() {
   } while (dirty || this.$$asyncQueue.length);
 
   while (this.$$postDigestQueue.length) {
-    this.$$postDigestQueue.shift()();
+    try {
+      this.$$postDigestQueue.shift()();
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   this.$clearPhase();
@@ -144,7 +155,11 @@ Scope.prototype.$applyAsync = function(expr) {
 
 Scope.prototype.$$flushApplyAsync = function() {
   while (this.$$applyAsyncQueue.length) {
-    this.$$applyAsyncQueue.shift()();
+    try {
+      this.$$applyAsyncQueue.shift()();
+    } catch (e) {
+      console.error(e);
+    }
   }
   this.$$applyAsyncId = null;
 };
