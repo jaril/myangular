@@ -455,5 +455,42 @@ describe("Scope", function() {
         done()
       }, 50);
     });
+
+    it("runs a $$postDigest function after each digest", function() {
+      scope.counter = 0;
+
+      scope.$$postDigest(function() {
+        scope.counter++
+      });
+
+      expect(scope.counter).toBe(0);
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+    });
+
+    it("does not include the $$postDigest in the digest", function() {
+      scope.aValue = "original value";
+
+      scope.$$postDigest(function() {
+        scope.aValue = "changed value";
+      });
+
+      scope.$watch(
+        function(scope) { return scope.aValue },
+        function(newValue, oldValue, scope) {
+          scope.watchedValue = newValue
+        }
+      );
+
+      scope.$digest();
+      expect(scope.watchedValue).toBe("original value");
+
+      scope.$digest();
+      expect(scope.watchedValue).toBe("changed value");
+    })
   });
 });

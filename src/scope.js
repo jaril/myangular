@@ -8,8 +8,9 @@ function Scope() {
   this.$$lastDirtyWatch = null;
   this.$$asyncQueue = [];
   this.$$applyAsyncQueue = [];
-  this.$$phase = null;
   this.$$applyAsyncId = null;
+  this.$$postDigestQueue = [];
+  this.$$phase = null;
 }
 
 function initWatchVal() {}
@@ -70,6 +71,10 @@ Scope.prototype.$digest = function() {
       throw "10 digest iterations reached";
     }
   } while (dirty || this.$$asyncQueue.length);
+
+  while (this.$$postDigestQueue.length) {
+    this.$$postDigestQueue.shift()();
+  }
 
   this.$clearPhase();
 };
@@ -144,4 +149,7 @@ Scope.prototype.$$flushApplyAsync = function() {
   this.$$applyAsyncId = null;
 };
 
+Scope.prototype.$$postDigest = function(fn) {
+  this.$$postDigestQueue.push(fn);
+}
 module.exports = Scope;
