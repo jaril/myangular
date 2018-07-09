@@ -7,7 +7,9 @@ function Scope() {
   this.$$watchers = [];
   this.$$lastDirtyWatch = null;
   this.$$asyncQueue = [];
+  this.$$applyAsyncQueue = [];
   this.$$phase = null;
+  this.$$applyAsyncId = null;
 }
 
 function initWatchVal() {}
@@ -51,6 +53,12 @@ Scope.prototype.$digest = function() {
   var dirty;
   this.$$lastDirtyWatch = null; //set to null at the beginning of every digest
   this.$beginPhase("$digest"); // starting digest phase
+
+  //if there's a timeout set and digest gets called, flush the timeout
+  if (this.$$applyAsyncId) {
+    clearTimeout(this.$$applyAsyncId);
+    this.$$flushApplyAsync();
+  }
 
   do { // runs this at least once
     while (this.$$asyncQueue.length) {
@@ -115,6 +123,25 @@ Scope.prototype.$beginPhase = function(phase) {
 
 Scope.prototype.$clearPhase = function() {
   this.$$phase = null;
+};
+
+Scope.prototype.$applyAsync = function(expr) {
+  var self = this;
+  self.$$applyAsyncQueue.push(function() {
+    self.$eval(expr);
+  });
+  if (self.$$applyAsyncId === null) {
+    self.$$applyAsyncId = setTimeout(function() {
+        self.$apply(_.bind(self.$$flushApplyAsync, self));
+    }, 0);
+  }
+};
+
+Scope.prototype.$$flushApplyAsync = function() {
+  while (this.$$applyAsyncQueue.length) {
+    this.$$applyAsyncQueue.shift()();
+  }
+  this.$$applyAsyncId = null;
 };
 
 module.exports = Scope;
