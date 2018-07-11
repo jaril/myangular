@@ -33,7 +33,7 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
       self.$$watchers.splice(index, 1);
       self.$$lastDirtyWatch = null;
     }
-  }
+  };
 };
 
 Scope.prototype.$$digestOnce = function() {
@@ -198,7 +198,7 @@ Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
       //first time an empty array gets passed into watchgroup, it calls its listenerFn later
       //second time, it just returns and changes shouldCall to false
       //this way listener doesn't get called when it's already gone
-      shouldCall = false
+      shouldCall = false;
     };
   }
 
@@ -206,7 +206,7 @@ Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
     //firstRun to mimic the same implementation of listenerFn called within $digestOnce l50
     if (firstRun) {
       firstRun = false;
-      listenerFn(newValues, newValues, self)
+      listenerFn(newValues, newValues, self);
     } else {
       listenerFn(newValues, oldValues, self);
     }
@@ -235,7 +235,8 @@ Scope.prototype.$new = function() {
   var ChildScope = function() { };
   ChildScope.prototype = this;
   var child = new ChildScope();
+  child.$$watchers = [];
   return child;
-}
+};
 
 module.exports = Scope;
