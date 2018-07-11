@@ -10,6 +10,7 @@ function Scope() {
   this.$$applyAsyncQueue = [];
   this.$$applyAsyncId = null;
   this.$$postDigestQueue = [];
+  this.$root = this;
   this.$$children = [];
   this.$$phase = null;
 }
@@ -25,14 +26,14 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
     last: initWatchVal
   };
 
-  this.$$lastDirtyWatch = null;
+  this.$root.$$lastDirtyWatch = null;
   this.$$watchers.unshift(watcher);
 
   return function() {
     var index = self.$$watchers.indexOf(watcher);
     if (index >= 0) {
       self.$$watchers.splice(index, 1);
-      self.$$lastDirtyWatch = null;
+      self.$root.$$lastDirtyWatch = null;
     }
   };
 };
@@ -42,6 +43,10 @@ Scope.prototype.$$digestOnce = function() {
   var continueLoop = true;
   var dirty;
 
+  //runs at least once for the scope, which calls it on its $$children
+  //on second run, it provides falsy value if no longer dirty
+  //self changed to scope as this value, scope referring to the current Scope
+  //self binding is reserved for the parent $$digestOnce is called on
   this.$$everyScope(function(scope) {
     var newValue, oldValue;
     _.forEachRight(scope.$$watchers, function(watcher) {
@@ -50,13 +55,13 @@ Scope.prototype.$$digestOnce = function() {
           newValue = watcher.watchFn(scope);
           oldValue = watcher.last;
           if (!scope.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-            self.$$lastDirtyWatch = watcher;
+            self.$root.$$lastDirtyWatch = watcher;
             watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue); //clone deep creates a deep clone, instead of having the same reference which would ===
             watcher.listenerFn(newValue,
               (oldValue === initWatchVal ? newValue : oldValue),
               scope);
             dirty = true;
-          } else if (self.$$lastDirtyWatch === watcher){ //case where the value is no longer dirty
+          } else if (self.$root.$$lastDirtyWatch === watcher){ //case where the value is no longer dirty
             continueLoop = false;
             return false;
           }
@@ -73,7 +78,7 @@ Scope.prototype.$$digestOnce = function() {
 Scope.prototype.$digest = function() {
   var ttl = 10;
   var dirty;
-  this.$$lastDirtyWatch = null; //set to null at the beginning of every digest
+  this.$root.$$lastDirtyWatch = null; //set to null at the beginning of every digest
   this.$beginPhase("$digest"); // starting digest phase
 
   //if there's a timeout set and digest gets called, flush the timeout
@@ -131,7 +136,7 @@ Scope.prototype.$apply = function(expr) {
     return this.$eval(expr);
   } finally {
     this.$clearPhase();
-    this.$digest();
+    this.$root.$digest();
   }
 };
 
@@ -141,7 +146,7 @@ Scope.prototype.$evalAsync = function(expr) {
   if (!self.$$phase && !self.$$asyncQueue.length) { //at time of execution, if a digest isnt going on and there's nothing in the queue
     setTimeout(function() { //something should digest this at some point, but in cast it doesnt, set a reminder to check later
       if(self.$$asyncQueue.length) { //if there is something in the queue at that point
-        self.$digest(); //run digest()
+        self.$root.$digest(); //run digest()
       }
     }, 0);
   }
@@ -250,10 +255,13 @@ Scope.prototype.$new = function() {
 
 Scope.prototype.$$everyScope = function(fn) {
   //this value is the current scope
+  //runs the anonymous function provided in $digestOnce
   if (fn(this)) {
     return this.$$children.every(function(child) {
       return child.$$everyScope(fn);
     });
+  //will only run this case if falsy
+  //happens when the return value (continueLoop) is false
   } else {
     return false;
   }
