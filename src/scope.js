@@ -177,5 +177,60 @@ Scope.prototype.$$flushApplyAsync = function() {
 
 Scope.prototype.$$postDigest = function(fn) {
   this.$$postDigestQueue.push(fn);
-}
+};
+
+Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
+  var self = this;
+  var newValues = new Array(watchFns.length);
+  var oldValues = new Array(watchFns.length);
+  var changeReactionScheduled = false;
+  var firstRun = true;
+
+  if(watchFns.length === 0) {
+    var shouldCall = true;
+    self.$evalAsync(function() {
+      if (shouldCall) {
+        listenerFn(newValues, newValues, self);
+      }
+    });
+    return function() {
+      //short circuits the function and returns a function that changes flag to false
+      //first time an empty array gets passed into watchgroup, it calls its listenerFn later
+      //second time, it just returns and changes shouldCall to false
+      //this way listener doesn't get called when it's already gone
+      shouldCall = false
+    };
+  }
+
+  function watchGroupListener() {
+    //firstRun to mimic the same implementation of listenerFn called within $digestOnce l50
+    if (firstRun) {
+      firstRun = false;
+      listenerFn(newValues, newValues, self)
+    } else {
+      listenerFn(newValues, oldValues, self);
+    }
+    changeReactionScheduled = false;
+  }
+
+  var destroyFunctions = _.map(watchFns, function(watchFn, i) {
+    return self.$watch(watchFn, function(newValue, oldValue) {
+      newValues[i] = newValue;
+      oldValues[i] = oldValue;
+      if (!changeReactionScheduled) {
+        changeReactionScheduled = true;
+        self.$evalAsync(watchGroupListener);
+      }
+    });
+  });
+
+  return function() {
+    _.forEach(destroyFunctions, function(destroyFunction) {
+      destroyFunction();
+    })
+  }
+
+
+};
+
 module.exports = Scope;
