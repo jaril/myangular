@@ -315,7 +315,7 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
           changeCount++;
           oldValue.length = newValue.length;
         }
-        _.forEach(newValue, function(newItem, i) {
+        _.forOwn(newValue, function(newItem, i) {
           var bothNaN = _.isNaN(newItem) && _.isNaN(oldValue[i]);
 
           if (!bothNaN && newItem !== oldValue[i]) {
@@ -324,7 +324,17 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
           }
         })
       } else {
-
+        if (!_.isObject(oldValue) || isArrayLike(oldValue)) {
+          changeCount ++;
+          oldValue = {};
+        }
+        _.forOwn(newValue, function(newVal, key) {
+          var bothNaN = _.isNaN(newVal) && _.isNaN(oldValue[key]);
+          if (!bothNaN && oldValue[key] !== newVal) {
+            changeCount++;
+            oldValue[key] = newVal;
+          }
+        });
       }
     //if !object
     } else {

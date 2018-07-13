@@ -735,7 +735,7 @@ describe("Scope", function() {
       expect(counter).toBe(0); //note that evalAsync only counter++ after
       setTimeout(function() {
         expect(counter).toBe(1); //here is after
-      }, 500);
+      }, 600);
     });
 
     it('uses the same array of old and new values on first run', function() {
@@ -1403,5 +1403,86 @@ describe("Scope", function() {
       scope.$digest();
       expect(scope.counter).toBe(2);
     });
+
+    it("notices when the value becomes an object", function() {
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.obj; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.obj = {a: 1};
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("notices when an attribute is added to an object", function() {
+      scope.counter = 0;
+      scope.obj = {a: 1};
+
+      scope.$watchCollection(
+        function(scope) { return scope.obj; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.obj.b = 2;
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("notices when an attribute is changed in an object", function() {
+      scope.counter = 0;
+      scope.obj = {a: 1};
+
+      scope.$watchCollection(
+        function(scope) { return scope.obj; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.obj.a = 2;
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it(" does not fail on NaN attributes in objects", function() {
+      scope.counter = 0;
+      scope.obj = {a: NaN};
+
+      scope.$watchCollection(
+        function(scope) { return scope.obj; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+    });
+
   });
 });
