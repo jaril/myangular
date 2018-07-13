@@ -1232,5 +1232,176 @@ describe("Scope", function() {
       scope.$digest();
       expect(scope.counter).toBe(1);
     });
+
+    it("notices when the value becomes an array", function() {
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arr; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.arr = [1, 2, 3];
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("notices an item added to an array", function() {
+      scope.arr = [1, 2, 3];
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arr; },
+        function(newValue, oldValue, scope) {
+          scope.counter++
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.arr.push(4);
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("notices an item removed to an array", function() {
+      scope.arr = [1, 2, 3];
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arr; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.arr.shift();
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("notices an item added to an array", function() {
+      scope.arr = [1, 2, 3];
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arr; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.arr[1] = 42;
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("notices an item reordered in an array", function() {
+      scope.arr = [2, 1, 3];
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arr; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.arr.sort();
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("does not fail on NaNs in arrays", function() {
+      scope.arr = [2, NaN, 3];
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arr; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+    });
+
+    it("notices an item replaced in an arguments object", function() {
+      (function() {
+        scope.arrayLike = arguments;
+      })(1, 2, 3);
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arrayLike; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.arrayLike[1] = 42;
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
+    it("notices an item replaced in a node list object", function() {
+      document.documentElement.appendChild(document.createElement('div'));
+      scope.arrayLike = document.getElementsByTagName('div');
+      scope.counter = 0;
+
+      scope.$watchCollection(
+        function(scope) { return scope.arrayLike; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      document.documentElement.appendChild(document.createElement('div'));
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
   });
 });

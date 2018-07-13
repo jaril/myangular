@@ -15,7 +15,15 @@ function Scope() {
   this.$$phase = null;
 }
 
-function initWatchVal() {}
+function initWatchVal() {};
+
+function isArrayLike(obj) {
+  if (_.isNull(obj) || _.isUndefined(obj)) {
+    return false;
+  }
+  var length = obj.length;
+  return _.isNumber(length);
+};
 
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
   var self = this;
@@ -297,10 +305,34 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
   var internalwatchFn = function(scope) {
     newValue = watchFn(scope);
 
-    if (!self.$$areEqual(oldValue, newValue, false)) {
-      changeCount++;
+    if (_.isObject(newValue)) {
+      if (isArrayLike(newValue)) {
+        if (!_.isArray(oldValue)) {
+          changeCount++;
+          oldValue = [];
+        }
+        if (newValue.length !== oldValue.length) {
+          changeCount++;
+          oldValue.length = newValue.length;
+        }
+        _.forEach(newValue, function(newItem, i) {
+          var bothNaN = _.isNaN(newItem) && _.isNaN(oldValue[i]);
+
+          if (!bothNaN && newItem !== oldValue[i]) {
+            changeCount++;
+            oldValue[i] = newItem;
+          }
+        })
+      } else {
+
+      }
+    //if !object
+    } else {
+      if (!self.$$areEqual(oldValue, newValue, false)) {
+        changeCount++;
+      }
+      oldValue = newValue;
     }
-    oldValue = newValue;
 
     return changeCount;
   };
