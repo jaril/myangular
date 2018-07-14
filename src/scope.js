@@ -15,7 +15,7 @@ function Scope() {
   this.$$phase = null;
 }
 
-function initWatchVal() {};
+function initWatchVal() {}
 
 function isArrayLike(obj) {
   if (_.isNull(obj) || _.isUndefined(obj)) {
@@ -23,7 +23,7 @@ function isArrayLike(obj) {
   }
   var length = obj.length;
   return _.isNumber(length);
-};
+}
 
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
   var self = this;
@@ -79,7 +79,7 @@ Scope.prototype.$$digestOnce = function() {
       }
     });
     return continueLoop;
-  })
+  });
   return dirty;
 };
 
@@ -253,7 +253,7 @@ Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
 
 Scope.prototype.$new = function(isolated, parent) {
   var child;
-  var parent = parent || this;
+  parent = parent || this;
   if (isolated) {
     child = new Scope();
     child.$root = parent.$root;
@@ -301,8 +301,10 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
   var self = this;
   var newValue, oldValue;
   var changeCount = 0;
+  var oldLength;
 
   var internalwatchFn = function(scope) {
+    var newLength;
     newValue = watchFn(scope);
 
     if (_.isObject(newValue)) {
@@ -322,19 +324,38 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
             changeCount++;
             oldValue[i] = newItem;
           }
-        })
+        });
+        //if object
       } else {
         if (!_.isObject(oldValue) || isArrayLike(oldValue)) {
           changeCount ++;
           oldValue = {};
+          oldLength = 0;
         }
+        newLength = 0;
         _.forOwn(newValue, function(newVal, key) {
-          var bothNaN = _.isNaN(newVal) && _.isNaN(oldValue[key]);
-          if (!bothNaN && oldValue[key] !== newVal) {
+          newLength++;
+          if (oldValue.hasOwnProperty(key)) {
+            var bothNaN = _.isNaN(newVal) && _.isNaN(oldValue[key]);
+            if (!bothNaN && oldValue[key] !== newVal) {
+              changeCount++;
+              oldValue[key] = newVal;
+            }
+          } else {
             changeCount++;
+            oldLength++;
             oldValue[key] = newVal;
           }
         });
+        if (oldLength > newLength) {
+          changeCount++;
+          _.forOwn(oldValue, function(oldVal, key) {
+            if (!newValue.hasOwnProperty(key)) {
+              oldLength--;
+              delete oldValue[key];
+            }
+          });
+        }
       }
     //if !object
     } else {
