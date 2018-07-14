@@ -735,7 +735,7 @@ describe("Scope", function() {
       expect(counter).toBe(0); //note that evalAsync only counter++ after
       setTimeout(function() {
         expect(counter).toBe(1); //here is after
-      }, 600);
+      }, 1000);
     });
 
     it('uses the same array of old and new values on first run', function() {
@@ -964,7 +964,7 @@ describe("Scope", function() {
       expect(child1.$$children.length).toBe(0);
       expect(child2.$$children.length).toBe(1);
       expect(child2.$$children[0]).toBe(child2_1);
-    })
+    });
 
     it("digests its children", function() {
       var parent = new Scope();
@@ -1020,7 +1020,7 @@ describe("Scope", function() {
       setTimeout(function() {
         expect(parent.counter).toBe(1);
         done();
-      }, 50)
+      }, 50);
     });
 
     it("does not have access to parent attributes when isolated", function() {
@@ -1029,7 +1029,7 @@ describe("Scope", function() {
 
       parent.aValue = 'abc';
 
-      expect(child.aValue).toBeUndefined
+      expect(child.aValue).toBeUndefined();
     });
 
     it("cannot watch its parent attributes when isolated", function() {
@@ -1041,7 +1041,7 @@ describe("Scope", function() {
       child.$watch(
         function(scope) { return scope.aValue; },
         function(newValue, oldValue, scope) {
-          scope.aValueWas = newValue
+          scope.aValueWas = newValue;
         }
       );
 
@@ -1117,7 +1117,7 @@ describe("Scope", function() {
       setTimeout(function() {
         expect(child.didEvalAsync).toBe(true);
         done();
-      }, 50)
+      }, 50);
     });
 
     it("executes $$postDigest functions on isolated scopes", function() {
@@ -1222,7 +1222,7 @@ describe("Scope", function() {
       scope.$watchCollection(
         function(scope) { return scope.aValue; },
         function(newValue, oldValue, scope) {
-          scope.counter++
+          scope.counter++;
         }
       );
 
@@ -1261,7 +1261,7 @@ describe("Scope", function() {
       scope.$watchCollection(
         function(scope) { return scope.arr; },
         function(newValue, oldValue, scope) {
-          scope.counter++
+          scope.counter++;
         }
       );
 
@@ -1469,7 +1469,7 @@ describe("Scope", function() {
       expect(scope.counter).toBe(2);
     });
 
-    it(" does not fail on NaN attributes in objects", function() {
+    it("does not fail on NaN attributes in objects", function() {
       scope.counter = 0;
       scope.obj = {a: NaN};
 
@@ -1482,6 +1482,28 @@ describe("Scope", function() {
 
       scope.$digest();
       expect(scope.counter).toBe(1);
+    });
+
+    it("notices when an attribute is removed from an object", function() {
+      scope.counter = 0;
+      scope.obj = {a: 1};
+
+      scope.$watchCollection(
+        function(scope) { return scope.obj; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        }
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      delete scope.obj.a;
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+
+      scope.$digest();
+      expect(scope.counter).toBe(2);
     });
 
   });
