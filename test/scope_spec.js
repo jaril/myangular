@@ -1677,6 +1677,17 @@ describe("Scope", function() {
 
         expect(event1).toBe(event2);
       });
+
+      it("passes additional arguments to listener on"+ method, function() {
+        var listener = jasmine.createSpy();
+        scope.$on('someEvent', listener);
+
+        scope[method]('someEvent', 'and', ['additional', 'arguments'], '...');
+
+        expect(listener.calls.mostRecent().args[1]).toEqual('and');
+        expect(listener.calls.mostRecent().args[2]).toEqual(['additional', 'arguments']);
+        expect(listener.calls.mostRecent().args[3]).toEqual('...');
+      });
     });
   });
 });
