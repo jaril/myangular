@@ -403,14 +403,14 @@ Scope.prototype.$emit = function(eventName) {
   // _.rest() no longer does what we used to want it to, implemented this differently
   var additionalArgs = Array.prototype.slice.call(arguments, 1);
   Array.prototype.shift.call(this, additionalArgs);
-  this.$$fireEventOnScope(eventName, additionalArgs);
+  return this.$$fireEventOnScope(eventName, additionalArgs);
 };
 
 Scope.prototype.$broadcast = function(eventName) {
   // _.rest() no longer does what we used to want it to, implemented this differently
   var additionalArgs = Array.prototype.slice.call(arguments, 1);
   Array.prototype.shift.call(this, additionalArgs);
-  this.$$fireEventOnScope(eventName, additionalArgs);
+  return this.$$fireEventOnScope(eventName, additionalArgs);
 };
 
 Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
@@ -420,6 +420,8 @@ Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
   _.forEach(listeners, function(listener) {
   listener.apply(null, listenerArgs);
   });
+
+  return event;
 };
 
 module.exports = Scope;
