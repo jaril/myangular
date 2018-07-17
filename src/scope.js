@@ -408,22 +408,34 @@ Scope.prototype.$on = function(eventName, listener) {
 };
 
 Scope.prototype.$emit = function(eventName) {
+  var event = {name: eventName};
   // _.rest() no longer does what we used to want it to, implemented this differently
   var additionalArgs = Array.prototype.slice.call(arguments, 1);
   Array.prototype.shift.call(this, additionalArgs);
-  return this.$$fireEventOnScope(eventName, additionalArgs);
+  var listenerArgs = [event].concat(additionalArgs);
+  var scope = this;
+
+  do {
+    scope.$$fireEventOnScope(eventName, listenerArgs);
+    scope = scope.$parent;
+  } while (scope);
+
+  return event;
 };
 
 Scope.prototype.$broadcast = function(eventName) {
+  var event = {name: eventName};
   // _.rest() no longer does what we used to want it to, implemented this differently
   var additionalArgs = Array.prototype.slice.call(arguments, 1);
   Array.prototype.shift.call(this, additionalArgs);
-  return this.$$fireEventOnScope(eventName, additionalArgs);
+  var listenerArgs = [event].concat(additionalArgs);
+
+  this.$$fireEventOnScope(eventName, listenerArgs);
+
+  return event;
 };
 
-Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
-  var event = {name: eventName};
-  var listenerArgs = [event].concat(additionalArgs);
+Scope.prototype.$$fireEventOnScope = function(eventName, listenerArgs) {
   var listeners = this.$$listeners[eventName] || [];
 
   var i = 0;
@@ -438,12 +450,6 @@ Scope.prototype.$$fireEventOnScope = function(eventName, additionalArgs) {
       i++;
     }
   }
-
-  // _.forEach(listeners, function(listener) {
-  // listener.apply(null, listenerArgs);
-  // });
-
-  return event;
 };
 
 module.exports = Scope;
