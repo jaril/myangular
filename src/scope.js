@@ -25,7 +25,6 @@ function isArrayLike(obj) {
   var length = obj.length;
   return length === 0 ||
     (_.isNumber(length) && length > 0 && (length - 1) in obj);
-  return _.isNumber(length);
 }
 
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
@@ -291,6 +290,7 @@ Scope.prototype.$$everyScope = function(fn) {
 };
 
 Scope.prototype.$destroy = function() {
+  this.$broadcast('$destroy');
   if (this.$parent) {
     var siblings = this.$parent.$$children;
     var indexOfThis = siblings.indexOf(this);
