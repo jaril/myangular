@@ -299,6 +299,7 @@ Scope.prototype.$destroy = function() {
     }
   }
   this.$$watchers = null;
+  this.$$listeners = {};
 };
 
 Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
@@ -469,8 +470,13 @@ Scope.prototype.$$fireEventOnScope = function(eventName, listenerArgs) {
     if (listeners[i] === null) {
       listeners.splice(i, 1)
     }  else {
-      listeners[i].apply(null, listenerArgs);
-      i++;
+      try {
+        listeners[i].apply(null, listenerArgs);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        i++;
+      }
     }
   }
 };
