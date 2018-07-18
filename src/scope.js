@@ -408,7 +408,7 @@ Scope.prototype.$on = function(eventName, listener) {
 };
 
 Scope.prototype.$emit = function(eventName) {
-  var event = {name: eventName};
+  var event = {name: eventName, targetScope: this};
   // _.rest() no longer does what we used to want it to, implemented this differently
   var additionalArgs = Array.prototype.slice.call(arguments, 1);
   Array.prototype.shift.call(this, additionalArgs);
@@ -416,22 +416,29 @@ Scope.prototype.$emit = function(eventName) {
   var scope = this;
 
   do {
+    event.currentScope = scope;
     scope.$$fireEventOnScope(eventName, listenerArgs);
     scope = scope.$parent;
   } while (scope);
 
+  event.currentScope = null;
   return event;
 };
 
 Scope.prototype.$broadcast = function(eventName) {
-  var event = {name: eventName};
+  var event = {name: eventName, targetScope: this};
   // _.rest() no longer does what we used to want it to, implemented this differently
   var additionalArgs = Array.prototype.slice.call(arguments, 1);
   Array.prototype.shift.call(this, additionalArgs);
   var listenerArgs = [event].concat(additionalArgs);
 
-  this.$$fireEventOnScope(eventName, listenerArgs);
+  this.$$everyScope(function(scope) {
+    event.currentScope = scope;
+    scope.$$fireEventOnScope(eventName, listenerArgs);
+    return true;
+  });
 
+  event.currentScope = null;
   return event;
 };
 
