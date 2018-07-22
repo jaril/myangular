@@ -1735,7 +1735,7 @@ describe("Scope", function() {
 
       it('does not stop on exceptions on '+ method, function() {
         var listener1 = function(event) {
-          throw 'listener1 throwing an exception'
+          throw 'listener1 throwing an exception';
         };
 
         var listener2 = jasmine.createSpy();
@@ -1745,7 +1745,7 @@ describe("Scope", function() {
         scope[method]('someEvent');
 
         expect(listener2).toHaveBeenCalled();
-      })
+      });
     });
 
     it("propagates up the scope hierarchy on $emit", function() {
@@ -1943,7 +1943,7 @@ describe("Scope", function() {
       scope.$destroy();
 
       scope.$emit('myEvent');
-      expect(listener1).not.toHaveBeenCalled()
-    })
+      expect(listener1).not.toHaveBeenCalled();
+    });
   });
 });

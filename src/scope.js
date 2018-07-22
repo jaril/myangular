@@ -385,7 +385,7 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
     }
 
     if(trackVeryOldValue) {
-      veryOldValue = _.clone(newValue)
+      veryOldValue = _.clone(newValue);
     }
   };
 
@@ -395,7 +395,7 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
 Scope.prototype.$on = function(eventName, listener) {
   var listeners = this.$$listeners[eventName];
   if (!listeners) {
-    this.$$listeners[eventName] = listeners = []
+    this.$$listeners[eventName] = listeners = [];
   }
 
   listeners.push(listener);
@@ -468,7 +468,7 @@ Scope.prototype.$$fireEventOnScope = function(eventName, listenerArgs) {
   //because it doesn't i++ unless the previous listener was !null
   while (i < listeners.length) {
     if (listeners[i] === null) {
-      listeners.splice(i, 1)
+      listeners.splice(i, 1);
     }  else {
       try {
         listeners[i].apply(null, listenerArgs);
