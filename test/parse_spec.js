@@ -92,9 +92,14 @@ describe("parse", function() {
     var fn = parse('true');
     expect(fn()).toBe(true);
   });
-  
+
   it('will parse false', function() {
     var fn = parse('false');
     expect(fn()).toBe(false);
+  });
+
+  it('ignores whitespace', function() {
+    var fn = parse(' \n42 ');
+    expect(fn()).toBe(42);
   });
 });
