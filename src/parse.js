@@ -162,6 +162,7 @@ AST.ArrayExpression = "ArrayExpression";
 AST.ObjectExpression = "ObjectExpression";
 AST.Property = "Property";
 AST.Identifier = "Identifier";
+AST.ThisExpression = "ThisExpression";
 
 AST.prototype.ast = function(text) {
   this.tokens = this.lexer.lex(text);
@@ -193,7 +194,8 @@ AST.prototype.constant = function() {
 AST.prototype.constants = {
   'null': {type: AST.Literal, value: null},
   'true': {type: AST.Literal, value: true},
-  'false': {type: AST.Literal, value: false}
+  'false': {type: AST.Literal, value: false},
+  'this': {type: AST.ThisExpression}
 };
 
 AST.prototype.expect = function(e) {
@@ -303,6 +305,8 @@ ASTCompiler.prototype.recurse = function(ast) {
       var intoId = this.nextId();
       this._if('s', this.assign(intoId, this.nonComputedMember('s', ast.name)));
       return intoId; //still in recurse, will return v0 to be referenced by the call stack
+    case AST.ThisExpression:
+      return 's';
   }
 };
 
@@ -333,11 +337,11 @@ ASTCompiler.prototype._if = function(test, consequent) {
 
 ASTCompiler.prototype.assign = function(id, value) {
   return id + '=' + value + ';';
-}
+};
 
 ASTCompiler.prototype.nextId = function() {
   var id = 'v' + (this.state.nextId++);
-  this.state.vars.push(id)
+  this.state.vars.push(id);
   return id;
 };
 
