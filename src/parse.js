@@ -179,6 +179,8 @@ AST.prototype.primary = function() {
     return this.object();
   } else if (this.constants.hasOwnProperty(this.tokens[0].text)) {
     return this.constants[this.consume().text];
+  } else if (this.peek().identifier) {
+    return this.identifier();
   } else {
     return this.constant();
   }
@@ -261,10 +263,14 @@ function ASTCompiler(astBuilder) {
 
 ASTCompiler.prototype.compile = function(text) {
   var ast = this.astBuilder.ast(text);
-  this.state = {body: []};
+  this.state = {body: [], nextId: 0, vars: []};
   this.recurse(ast);
   /* jshint - W054 */
-  return new Function(this.state.body.join(''));
+  return new Function('s',
+    (this.state.vars.length ?
+      'var ' + this.state.vars.join(',') + ';' :
+      ''
+    ) + this.state.body.join(''));
   /* jshint - W054 */
 };
 
@@ -286,14 +292,17 @@ ASTCompiler.prototype.recurse = function(ast) {
       return '[' + elements.join(',') + ']';
     case AST.ObjectExpression:
       var properties = ast.properties.map(function(property) {
-        // var key = this.escape(property.key.value);
-        var key = property.key.type === AST.Identifier ?
-          property.key.name :
-          this.escape(property.key.value);
-        var value = this.recurse(property.value);
-        return key + ':' + value;
+      var key = property.key.type === AST.Identifier ?
+        property.key.name :
+        this.escape(property.key.value);
+      var value = this.recurse(property.value);
+      return key + ':' + value;
       }, this);
       return '{' + properties.join(',') + '}';
+    case AST.Identifier:
+      var intoId = this.nextId();
+      this._if('s', this.assign(intoId, this.nonComputedMember('s', ast.name)));
+      return intoId; //still in recurse, will return v0 to be referenced by the call stack
   }
 };
 
@@ -311,6 +320,25 @@ ASTCompiler.prototype.stringEscapeRegex = /[^ a-zA-Z0-9]/g;
 
 ASTCompiler.prototype.stringEscapeFn = function(c) {
   return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+};
+
+ASTCompiler.prototype.nonComputedMember = function(left, right) {
+  return '(' + left + ').' + right;
+  // return left + '[' + right + ']'
+};
+
+ASTCompiler.prototype._if = function(test, consequent) {
+  this.state.body.push('if(', test, '){', consequent, '}');
+};
+
+ASTCompiler.prototype.assign = function(id, value) {
+  return id + '=' + value + ';';
+}
+
+ASTCompiler.prototype.nextId = function() {
+  var id = 'v' + (this.state.nextId++);
+  this.state.vars.push(id)
+  return id;
 };
 
 function Parser(lexer) {
