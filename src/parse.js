@@ -281,7 +281,7 @@ ASTCompiler.prototype.compile = function(text) {
   this.state = {body: [], nextId: 0, vars: []};
   this.recurse(ast);
   /* jshint - W054 */
-  return new Function('s',
+  return new Function('s', 'l',
     (this.state.vars.length ?
       'var ' + this.state.vars.join(',') + ';' :
       ''
@@ -317,14 +317,15 @@ ASTCompiler.prototype.recurse = function(ast) {
       return '{' + properties.join(',') + '}';
     case AST.Identifier:
       intoId = this.nextId();
-      this._if('s', this.assign(intoId, this.nonComputedMember('s', ast.name)));
+      this.if_(this.getHasOwnProperty('l', ast.name), this.assign(intoId, this.nonComputedMember('l', ast.name)))
+      this.if_(this.not(this.getHasOwnProperty('l', ast.name)) + ' && s', this.assign(intoId, this.nonComputedMember('s', ast.name)));
       return intoId; //still in recurse, will return v0 to be referenced by the call stack
     case AST.ThisExpression:
       return 's';
     case AST.MemberExpression:
       intoId = this.nextId();
       var left = this.recurse(ast.object);
-      this._if(left, this.assign(intoId, this.nonComputedMember(left, ast.property.name)));
+      this.if_(left, this.assign(intoId, this.nonComputedMember(left, ast.property.name)));
       return intoId;
   }
 };
@@ -350,7 +351,7 @@ ASTCompiler.prototype.nonComputedMember = function(left, right) {
   // return left + '[' + right + ']'
 };
 
-ASTCompiler.prototype._if = function(test, consequent) {
+ASTCompiler.prototype.if_ = function(test, consequent) {
   this.state.body.push('if(', test, '){', consequent, '}');
 };
 
@@ -362,6 +363,14 @@ ASTCompiler.prototype.nextId = function() {
   var id = 'v' + (this.state.nextId++);
   this.state.vars.push(id);
   return id;
+};
+
+ASTCompiler.prototype.not = function(e) {
+  return '!(' + e + ')';
+};
+
+ASTCompiler.prototype.getHasOwnProperty = function(object, property) {
+  return object + '&&(' + this.escape(property) + ' in ' + object + ')';
 };
 
 function Parser(lexer) {
