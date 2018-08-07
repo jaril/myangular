@@ -22,7 +22,7 @@ Lexer.prototype.lex = function(text) {
       this.readNumber();
     } else if (this.is('\'"')) {
       this.readString(this.ch);
-    } else if (this.is('[],{}:.')) {
+    } else if (this.is('[],{}:.()')) {
       this.tokens.push({
         text: this.ch
       });
@@ -164,6 +164,7 @@ AST.Property = "Property";
 AST.Identifier = "Identifier";
 AST.ThisExpression = "ThisExpression";
 AST.MemberExpression = "MemberExpression";
+AST.CallExpression = "CallExpression";
 
 AST.prototype.ast = function(text) {
   this.tokens = this.lexer.lex(text);
@@ -190,7 +191,7 @@ AST.prototype.primary = function() {
   }
   var next;
 
-  while ((next = this.expect('.', '['))) {
+  while ((next = this.expect('.', '[', '('))) {
     if (next.text === '[') {
       primary = {
         type: AST.MemberExpression,
@@ -199,13 +200,20 @@ AST.prototype.primary = function() {
         computed: true
       };
       this.consume(']');
-    } else {
+    } else if (next.text === '.') {
       primary = {
         type: AST.MemberExpression,
         object: primary,
         property: this.identifier(),
         computed: false
       };
+    } else if (next.text === '(') {
+      primary = {
+        type: AST.CallExpression,
+        callee: primary,
+        arguments: this.parseArguments()
+      };
+      this.consume(')');
     }
   }
 
@@ -284,6 +292,15 @@ AST.prototype.identifier = function() {
   return {type: AST.Identifier, name: this.consume().text};
 };
 
+AST.prototype.parseArguments = function() {
+  var args = []
+  while (!this.peek(')')) {
+    do {
+      args.push(this.primary());
+    } while (this.expect(','))
+  }
+  return args;
+};
 function ASTCompiler(astBuilder) {
   this.astBuilder = astBuilder;
 }
@@ -320,16 +337,16 @@ ASTCompiler.prototype.recurse = function(ast) {
       return '[' + elements.join(',') + ']';
     case AST.ObjectExpression:
       var properties = ast.properties.map(function(property) {
-      var key = property.key.type === AST.Identifier ?
-        property.key.name :
-        this.escape(property.key.value);
-      var value = this.recurse(property.value);
-      return key + ':' + value;
-      }, this);
+        var key = property.key.type === AST.Identifier ?
+          property.key.name :
+          this.escape(property.key.value);
+        var value = this.recurse(property.value);
+        return key + ':' + value;
+        }, this);
       return '{' + properties.join(',') + '}';
     case AST.Identifier:
       intoId = this.nextId();
-      this.if_(this.getHasOwnProperty('l', ast.name), this.assign(intoId, this.nonComputedMember('l', ast.name)))
+      this.if_(this.getHasOwnProperty('l', ast.name), this.assign(intoId, this.nonComputedMember('l', ast.name)));
       this.if_(this.not(this.getHasOwnProperty('l', ast.name)) + ' && s', this.assign(intoId, this.nonComputedMember('s', ast.name)));
       return intoId; //still in recurse, will return v0 to be referenced by the call stack
     case AST.ThisExpression:
@@ -344,6 +361,12 @@ ASTCompiler.prototype.recurse = function(ast) {
         this.if_(left, this.assign(intoId, this.nonComputedMember(left, ast.property.name)));
       }
       return intoId;
+    case AST.CallExpression:
+      var callee = this.recurse(ast.callee);
+      var args = ast.arguments.map(function(arg) {
+        return this.recurse(arg);
+      }, this);
+      return callee + ' && ' + callee + '(' + args.join(',') + ')';
   }
 };
 
