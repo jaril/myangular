@@ -5,6 +5,17 @@ var _ = require('lodash');
 var ESCAPES = {'n':'\n', 'f':'\f', 'r':'\r', 't':'\t',
   'v':'\v', '\'':'\'', '"':'"'};
 
+<<<<<<< HEAD
+=======
+function ensureSafeMemberName(name) {
+  if (name === 'constructor' || name === '__proto__' ||
+      name === '__defineGetter__' || name === '__defineSetter__' ||
+      name === '__lookupGetter__' || name === '__lookupSetter__') {
+    throw 'Attempting to access a disallowed field in Angular expressions!';
+  }
+}
+
+>>>>>>> parent of f614297... added safeguards for objects and functions
 function Lexer() {
 }
 
@@ -320,11 +331,15 @@ ASTCompiler.prototype.compile = function(text) {
   this.state = {body: [], nextId: 0, vars: []};
   this.recurse(ast);
   /* jshint - W054 */
+<<<<<<< HEAD
   return new Function('s', 'l',
     (this.state.vars.length ?
       'var ' + this.state.vars.join(',') + ';' :
       ''
     ) + this.state.body.join(''));
+=======
+  return new Function('ensureSafeMemberName', fnString)(ensureSafeMemberName);
+>>>>>>> parent of f614297... added safeguards for objects and functions
   /* jshint - W054 */
 };
 
@@ -473,6 +488,13 @@ ASTCompiler.prototype.computedMember = function(left, right) {
   return '(' + left + ')[' + right + ']';
 };
 
+<<<<<<< HEAD
+=======
+ASTCompiler.prototype.addEnsureSafeMemberName = function(expr) {
+  this.state.body.push('ensureSafeMemberName(' + expr + ');');
+};
+
+>>>>>>> parent of f614297... added safeguards for objects and functions
 function Parser(lexer) {
   this.lexer = lexer;
   this.ast = new AST(this.lexer);
