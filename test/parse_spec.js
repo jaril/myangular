@@ -377,5 +377,8 @@ describe("parse", function() {
       fn({obj: { }});
     }).toThrow();
   });
+<<<<<<< HEAD
+>>>>>>> parent of f614297... added safeguards for objects and functions
+=======
 >>>>>>> parent of f614297... added safeguards for objects and functions
 });

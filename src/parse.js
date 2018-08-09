@@ -6,7 +6,10 @@ var ESCAPES = {'n':'\n', 'f':'\f', 'r':'\r', 't':'\t',
   'v':'\v', '\'':'\'', '"':'"'};
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of f614297... added safeguards for objects and functions
 function ensureSafeMemberName(name) {
   if (name === 'constructor' || name === '__proto__' ||
       name === '__defineGetter__' || name === '__defineSetter__' ||
@@ -15,6 +18,9 @@ function ensureSafeMemberName(name) {
   }
 }
 
+<<<<<<< HEAD
+>>>>>>> parent of f614297... added safeguards for objects and functions
+=======
 >>>>>>> parent of f614297... added safeguards for objects and functions
 function Lexer() {
 }
@@ -332,11 +338,15 @@ ASTCompiler.prototype.compile = function(text) {
   this.recurse(ast);
   /* jshint - W054 */
 <<<<<<< HEAD
+<<<<<<< HEAD
   return new Function('s', 'l',
     (this.state.vars.length ?
       'var ' + this.state.vars.join(',') + ';' :
       ''
     ) + this.state.body.join(''));
+=======
+  return new Function('ensureSafeMemberName', fnString)(ensureSafeMemberName);
+>>>>>>> parent of f614297... added safeguards for objects and functions
 =======
   return new Function('ensureSafeMemberName', fnString)(ensureSafeMemberName);
 >>>>>>> parent of f614297... added safeguards for objects and functions
@@ -494,6 +504,9 @@ ASTCompiler.prototype.addEnsureSafeMemberName = function(expr) {
   this.state.body.push('ensureSafeMemberName(' + expr + ');');
 };
 
+<<<<<<< HEAD
+>>>>>>> parent of f614297... added safeguards for objects and functions
+=======
 >>>>>>> parent of f614297... added safeguards for objects and functions
 function Parser(lexer) {
   this.lexer = lexer;
