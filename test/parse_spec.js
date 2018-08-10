@@ -513,4 +513,79 @@ describe("parse", function() {
     expect(parse('a - 22')()).toBe(-22);
     expect(parse('42 - a')()).toBe(42);
   });
+
+  it('parses relational operators', function() {
+    expect(parse('1 < 2')()).toBe(true);
+    expect(parse('1 > 2')()).toBe(false);
+    expect(parse('1 <= 2')()).toBe(true);
+    expect(parse('2 <= 2')()).toBe(true);
+    expect(parse('1 >= 2')()).toBe(false);
+    expect(parse('2 >= 2')()).toBe(true);
+  });
+
+  it('parses equality operators', function() {
+    expect(parse('42 == 42')()).toBe(true);
+    expect(parse('42 == "42"')()).toBe(true);
+    expect(parse('42 != 42')()).toBe(false);
+    expect(parse('42 === 42')()).toBe(true);
+    expect(parse('42 === "42"')()).toBe(false);
+    expect(parse('42 !== 42')()).toBe(false);
+  });
+
+  it('parses relationals on a higher precedence than equality', function() {
+    expect(parse('2 == "2" > 2 === "2"')()).toBe(false);
+  });
+
+  it('parses additives on a higher precedence than relationals', function() {
+    expect(parse('2 + 3 < 6 - 2')()).toBe(false);
+  });
+
+  it('parses logical AND', function() {
+    expect(parse('true && true')()).toBe(true);
+    expect(parse('true && false')()).toBe(false);
+  });
+
+  it('parses logical OR', function() {
+    expect(parse('true || true')()).toBe(true);
+    expect(parse('true || false')()).toBe(true);
+    expect(parse('fales || false')()).toBe(false);
+  });
+
+  it('parses multiple ANDs', function() {
+    expect(parse('true && true && true')()).toBe(true);
+    expect(parse('true && true && false')()).toBe(false);
+  });
+
+  it('parses multiple ORs', function() {
+    expect(parse('true || true || true')()).toBe(true);
+    expect(parse('true || true || false')()).toBe(true);
+    expect(parse('false || false || true')()).toBe(true);
+    expect(parse('false || false || false')()).toBe(false);
+  });
+
+  it('short-circuits AND', function() {
+    var invoked;
+    var scope = {fn: function() { invoked = true; }};
+
+    parse('false && fn()')(scope);
+
+    expect(invoked).toBeUndefined();
+  });
+
+  it('short-circuits OR', function() {
+    var invoked;
+    var scope = {fn: function() { invoked = true; }};
+
+    parse('true || fn()')(scope);
+
+    expect(invoked).toBeUndefined();
+  });
+
+  it('parses AND with a higher precedence than OR', function() {
+    expect(parse('false && true || true')()).toBe(true);
+  });
+
+  it('parses OR with a lower precedence than equality', function() {
+    expect(parse('1 === 2 || 2 === 2')()).toBeTruthy();
+  });
 });
