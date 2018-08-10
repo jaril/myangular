@@ -85,7 +85,7 @@ Lexer.prototype.lex = function(text) {
       this.readNumber();
     } else if (this.is('\'"')) {
       this.readString(this.ch);
-    } else if (this.is('[],{}:.()')) {
+    } else if (this.is('[],{}:.()?')) {
       this.tokens.push({
         text: this.ch
       });
@@ -253,6 +253,7 @@ AST.AssignmentExpression = "AssignmentExpression";
 AST.UnaryExpression = 'UnaryExpression';
 AST.BinaryExpression = 'BinaryExpression';
 AST.LogicalExpression = 'LogicalExpression';
+AST.ConditionalExpression = 'ConditionalExpression';
 
 AST.prototype.ast = function(text) {
   this.tokens = this.lexer.lex(text);
@@ -391,9 +392,9 @@ AST.prototype.parseArguments = function() {
 };
 
 AST.prototype.assignment = function() {
-  var left = this.logicalOR();
+  var left = this.ternary();
   if (this.expect('=')) {
-    var right = this.logicalOR();
+    var right = this.ternary();
     return {type: AST.AssignmentExpression, left: left, right: right};
   }
   return left;
@@ -468,6 +469,20 @@ AST.prototype.equality = function() {
   return left;
 };
 
+AST.prototype.logicalAND = function() {
+  var left = this.equality();
+  var token;
+  while ((token = this.expect('&&'))) {
+    left = {
+      type: AST.LogicalExpression,
+      left: left,
+      operator: token.text,
+      right: this.equality()
+    };
+  }
+  return left;
+};
+
 AST.prototype.logicalOR = function() {
   var left = this.logicalAND();
   var token;
@@ -482,18 +497,21 @@ AST.prototype.logicalOR = function() {
   return left;
 };
 
-AST.prototype.logicalAND = function() {
-  var left = this.equality();
-  var token;
-  while ((token = this.expect('&&'))) {
-    left = {
-      type: AST.LogicalExpression,
-      left: left,
-      operator: token.text,
-      right: this.equality()
-    };
+AST.prototype.ternary = function() {
+  var test = this.logicalOR();
+  if (this.expect('?')) {
+    var consequent = this.assignment();
+    if (this.consume(':')) {
+      var alternate = this.assignment();
+      return {
+        type: AST.ConditionalExpression,
+        test: test,
+        consequent: consequent,
+        alternate: alternate
+      };
+    }
   }
-  return left;
+  return test;
 };
 
 function ASTCompiler(astBuilder) {
@@ -646,6 +664,15 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
       this.state.body.push(this.assign(intoId, this.recurse(ast.left)));
       this.if_(ast.operator === '&&' ? intoId : this.not(intoId),
         this.assign(intoId, this.recurse(ast.right)));
+      return intoId;
+    case AST.ConditionalExpression:
+      intoId = this.nextId();
+      var testId = this.nextId();
+      this.state.body.push(this.assign(testId, this.recurse(ast.test)));
+      this.if_(testId,
+        this.assign(intoId, this.recurse(ast.consequent)));
+      this.if_(this.not(testId),
+        this.assign(intoId, this.recurse(ast.alternate)));
       return intoId;
   }
 };
