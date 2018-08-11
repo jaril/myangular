@@ -1,6 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
+var filter = require('./filter').filter;
 
 var ESCAPES = {'n':'\n', 'f':'\f', 'r':'\r', 't':'\t',
   'v':'\v', '\'':'\'', '"':'"'};
@@ -26,7 +27,8 @@ var OPERATORS = {
   '===': true,
   '!==': true,
   '&&': true,
-  '||': true
+  '||': true,
+  '|': true
 };
 
 function ensureSafeMemberName(name) {
@@ -264,7 +266,7 @@ AST.prototype.program = function() {
   var body = [];
   while (true) {
     if (this.tokens.length) {
-      body.push(this.assignment());
+      body.push(this.filter());
     }
     if (!this.expect(';')) {
       return {type: AST.Program, body: body};
@@ -275,7 +277,7 @@ AST.prototype.program = function() {
 AST.prototype.primary = function() {
   var primary;
   if (this.expect('(')) {
-    primary = this.assignment();
+    primary = this.filter();
     this.consume(')');
   } else if (this.expect('[')) {
     primary = this.arrayDeclaration();
@@ -524,15 +526,33 @@ AST.prototype.ternary = function() {
   return test;
 };
 
+AST.prototype.filter = function() {
+  var left = this.assignment();
+  if (this.expect('|')) {
+    left = {
+      type: AST.CallExpression,
+      callee: this.identifier(),
+      arguments: [left],
+      filter: true
+    };
+  }
+  return left;
+};
+
 function ASTCompiler(astBuilder) {
   this.astBuilder = astBuilder;
 }
 
 ASTCompiler.prototype.compile = function(text) {
   var ast = this.astBuilder.ast(text);
-  this.state = {body: [], nextId: 0, vars: []};
+  this.state = {
+    body: [],
+    nextId: 0,
+    vars: [],
+    filters: {}
+  };
   this.recurse(ast);
-  var fnString = 'var fn=function(s,l){' +
+  var fnString = this.filterPrefix() + 'var fn=function(s,l){' +
     (this.state.vars.length ?
     'var ' + this.state.vars.join(',') + ';' :
     ''
@@ -545,11 +565,13 @@ ASTCompiler.prototype.compile = function(text) {
     'ensureSafeObject',
     'ensureSafeFunction',
     'ifDefined',
+    'filter',
     fnString)(
       ensureSafeMemberName,
       ensureSafeObject,
       ensureSafeFunction,
-      ifDefined);
+      ifDefined,
+      filter);
   /* jshint - W054 */
 };
 
@@ -634,21 +656,32 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
       }
       return intoId;
     case AST.CallExpression:
-      var callContext = {};
-      var callee = this.recurse(ast.callee, callContext);
-      var args = ast.arguments.map(function(arg) {
-        return 'ensureSafeObject(' + this.recurse(arg) + ')';
-      }, this);
-      if (callContext.name) {
-        this.addEnsureSafeObject(callContext.context);
-        if (callContext.computed) {
-          callee = this.computedMember(callContext.context, callContext.name);
-        } else {
-          callee = this.nonComputedMember(callContext.context, callContext.name);
+      var callContext, callee, args;
+
+      if (ast.filter) {
+        callee = this.filter(ast.callee.name);
+        args = ast.arguments.map(function(arg) {
+          return this.recurse(arg);
+        }, this);
+        return callee + '(' +  args + ')';
+      } else {
+        callContext = {};
+        callee = this.recurse(ast.callee, callContext);
+        args = ast.arguments.map(function(arg) {
+          return 'ensureSafeObject(' + this.recurse(arg) + ')';
+        }, this);
+        if (callContext.name) {
+          this.addEnsureSafeObject(callContext.context);
+          if (callContext.computed) {
+            callee = this.computedMember(callContext.context, callContext.name);
+          } else {
+            callee = this.nonComputedMember(callContext.context, callContext.name);
+          }
         }
+        this.addEnsureSafeFunction(callee);
+        return callee + ' && ensureSafeObject(' + callee + '(' + args.join(',') + '))';
       }
-      this.addEnsureSafeFunction(callee);
-      return callee + ' && ensureSafeObject(' + callee + '(' + args.join(',') + '))';
+      break;
     case AST.AssignmentExpression:
       var leftContext = {};
       this.recurse(ast.left, leftContext, true);
@@ -719,9 +752,11 @@ ASTCompiler.prototype.assign = function(id, value) {
   return id + '=' + value + ';';
 };
 
-ASTCompiler.prototype.nextId = function() {
+ASTCompiler.prototype.nextId = function(skip) {
   var id = 'v' + (this.state.nextId++);
-  this.state.vars.push(id);
+  if (!skip) {
+    this.state.vars.push(id);
+  }
   return id;
 };
 
@@ -751,6 +786,25 @@ ASTCompiler.prototype.addEnsureSafeFunction = function(expr) {
 
 ASTCompiler.prototype.ifDefined = function(value, defaultValue) {
   return 'ifDefined(' + value + ',' + this.escape(defaultValue) + ')';
+};
+
+ASTCompiler.prototype.filter = function(name) {
+  if (!this.state.filters.hasOwnProperty(name)) {
+    this.state.filters[name] = this.nextId(true);
+  }
+  return this.state.filters[name];
+};
+
+ASTCompiler.prototype.filterPrefix = function() {
+  var self = this;
+  if (_.isEmpty(this.state.filters)) {
+    return '';
+  } else {
+    var parts = _.map(this.state.filters, function(varName, filterName) {
+      return varName + '=' + 'filter(' +  this.escape(filterName) + ')';
+    }.bind(this));
+    return 'var ' + parts.join(',') + ';';
+  }
 };
 
 function Parser(lexer) {
