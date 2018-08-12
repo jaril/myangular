@@ -205,7 +205,7 @@ Lexer.prototype.isExpOperator = function(ch) {
 };
 
 Lexer.prototype.isIdent = function(ch) {
-  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '_' && ch <= '$' || ch === '_');
+  return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '_' && ch <= '$' || ch === '_' || ch === '$');
 };
 
 Lexer.prototype.readIdent = function() {
