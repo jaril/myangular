@@ -1,6 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
+module.exports = filterFilter;
 
 function filterFilter() {
   return function(array, filterExpr) {
@@ -10,7 +11,8 @@ function filterFilter() {
     } else if (_.isString(filterExpr) ||
                _.isNumber(filterExpr) ||
                _.isBoolean(filterExpr) ||
-               _.isNull(filterExpr)) {
+               _.isNull(filterExpr) ||
+               _.isObject(filterExpr)) {
       predicateFn = createPredicateFn(filterExpr);
     } else {
       return array;
@@ -19,8 +21,6 @@ function filterFilter() {
     return _.filter(array, predicateFn);
   };
 }
-
-module.exports = filterFilter;
 
 function createPredicateFn(expression) {
 
@@ -33,21 +33,41 @@ function createPredicateFn(expression) {
     }
     actual = ('' + actual).toLowerCase();
     expected = ('' + expected).toLowerCase();
-    return actual.indexOf(expected) !== -1
+    return actual.indexOf(expected) !== -1;
   }
+
   return function predicateFn(item) {
-    return deepCompare(item, expression, comparator)
+    return deepCompare(item, expression, comparator, true);
   };
 }
 
-function deepCompare(actual, expected, comparator) {
+function deepCompare(actual, expected, comparator, matchAnyProperty) {
   if (_.isString(expected) && _.startsWith(expected, '!')) {
-    return !deepCompare(actual, expected.substring(1), comparator);
+    return !deepCompare(actual, expected.substring(1), comparator, matchAnyProperty);
+  }
+  if (_.isArray(actual)) {
+    return _.some(actual, function(actualItem) {
+      return deepCompare(actualItem, expected, comparator, matchAnyProperty);
+    });
   }
   if (_.isObject(actual)) {
-    return _.some(actual, function(value) {
-      return deepCompare(value, expected, comparator);
-    });
+    if (_.isObject(expected)) {
+      return _.every(
+        _.toPlainObject(expected),
+        function(expectedVal, expectedKey) {
+          if (_.isUndefined(expectedVal)) {
+            return true;
+          }
+          return deepCompare(actual[expectedKey], expectedVal, comparator);
+        }
+      );
+    } else if (matchAnyProperty) {
+      return _.some(actual, function(value) {
+        return deepCompare(value, expected, comparator, matchAnyProperty);
+      });
+    } else {
+      return comparator(actual, expected)
+    }
   } else {
     return comparator(actual, expected);
   }
