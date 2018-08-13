@@ -2,6 +2,7 @@
 // Scope constructor function which is just a regular Object constructor
 
 var _ = require('lodash');
+var parse = require('./parse');
 
 function Scope() {
   this.$$watchers = [];
@@ -30,7 +31,7 @@ function isArrayLike(obj) {
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
   var self = this;
   var watcher = {
-    watchFn: watchFn,
+    watchFn: parse(watchFn),
     listenerFn: listenerFn || function() {},
     valueEq: !!(valueEq),
     last: initWatchVal
@@ -134,7 +135,7 @@ Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
 
 //$eval calls function expr and passes scope and locals as its arguments
 Scope.prototype.$eval = function(expr, locals) {
-  return expr(this, locals);
+  return parse(expr)(this, locals);
 };
 
 //calls $eval and starts $digest
@@ -310,6 +311,8 @@ Scope.prototype.$watchCollection = function(watchFn, listenerFn) {
   var veryOldValue;
   var trackVeryOldValue = (listenerFn.length > 1);
   var firstRun = true;
+
+  watchFn = parse(watchFn);
 
   var internalwatchFn = function(scope) {
     var newLength;

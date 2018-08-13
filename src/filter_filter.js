@@ -30,18 +30,18 @@ function createPredicateFn(expression, comparator) {
   if (comparator === true) {
     comparator = _.isEqual;
   } else if (!_.isFunction(comparator)) {
-      comparator = function(actual, expected) {
-        if (_.isUndefined(actual)) {
-          return false;
-        }
-        if (_.isNull(actual) || _.isNull(expected)) {
-          return actual === expected;
-        }
-        actual = ('' + actual).toLowerCase();
-        expected = ('' + expected).toLowerCase();
-        return actual.indexOf(expected) !== -1;
-      };
-    }
+    comparator = function(actual, expected) {
+      if (_.isUndefined(actual)) {
+        return false;
+      }
+      if (_.isNull(actual) || _.isNull(expected)) {
+        return actual === expected;
+      }
+      actual = ('' + actual).toLowerCase();
+      expected = ('' + expected).toLowerCase();
+      return actual.indexOf(expected) !== -1;
+    };
+  }
 
   return function predicateFn(item) {
     if (shouldMatchPrimitives && !_.isObject(item)) {
