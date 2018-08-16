@@ -2,11 +2,11 @@
 
 var setupModuleLoader = require('../src/loader');
 
-describe('setupModuleLoader', function() {
+beforeEach(function() {
+  delete window.angular;
+});
 
-  beforeEach(function() {
-    delete window.angular;
-  });
+describe('setupModuleLoader', function() {
 
   it('exposes angular on the window', function() {
     setupModuleLoader(window);
@@ -18,7 +18,7 @@ describe('setupModuleLoader', function() {
     var ng = window.angular;
     setupModuleLoader(window);
     expect(window.angular).toBe(ng);
-  })
+  });
 
   it('exposes the angular module function', function() {
     setupModuleLoader(window);
@@ -42,7 +42,7 @@ describe('modules', function() {
 
   it('allows registering a module', function() {
     var myModule = window.angular.module('myModule', []);
-    expect(myModule).toBeDefined;
+    expect(myModule).toBeDefined();
     expect(myModule.name).toBe('myModule');
   });
 
@@ -55,5 +55,25 @@ describe('modules', function() {
   it('attaches the requires array to the registered module', function() {
     var myModule = window.angular.module('myModule', ['myOtherModule']);
     expect(myModule.requires).toEqual(['myOtherModule']);
-  })
+  });
+
+  it('allows getting a module', function() {
+    var myModule = window.angular.module('myModule', []);
+    var gotModule = window.angular.module('myModule');
+
+    expect(gotModule).toBeDefined();
+    expect(gotModule).toBe(myModule);
+  });
+
+  it('throws when getting a non-existent module', function() {
+    expect(function() {
+      window.angular.module('myModule');
+    }).toThrow();
+  });
+
+  it('does not allow a module to be called hasOwnProperty', function() {
+    expect(function() {
+      window.angular.module('hasOwnProperty', []);
+    }).toThrow();
+  });
 });
