@@ -34,7 +34,7 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
   watchFn = parse(watchFn);
 
   if (watchFn.$$watchDelegate) {
-    return watchFn.$$watchDelegate(self, listenerFn, valueEq, watchFn)
+    return watchFn.$$watchDelegate(self, listenerFn, valueEq, watchFn);
   }
   var watcher = {
     watchFn: watchFn,
