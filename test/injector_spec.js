@@ -30,7 +30,7 @@ describe('injector', function() {
     var module = window.angular.module('myModule', []);
     module.constant('hasOwnProperty', false);
     expect(function() {
-      createInjector(['myModule'])
+      createInjector(['myModule']);
     }).toThrow();
   });
 
@@ -39,5 +39,47 @@ describe('injector', function() {
    module.constant('aConstant', 42);
    var injector = createInjector(['myModule']);
    expect(injector.get('aConstant')).toBe(42);
- })
+ });
+
+ it('loads multiple modules', function() {
+   var module1 = window.angular.module('myModule', []);
+   var module2 = window.angular.module('myOtherModule', []);
+   module1.constant('aConstant', 42);
+   module1.constant('anotherConstant', 43);
+   var injector = createInjector(['myModule', 'myOtherModule']);
+
+   expect(injector.has('aConstant')).toBe(true);
+   expect(injector.has('anotherConstant')).toBe(true);
+ });
+
+  it('loads the required modules of a module', function() {
+    var module1 = window.angular.module('myModule', []);
+    var module2 = window.angular.module('myOtherModule', ['myModule']);
+    module1.constant('aConstant', 42);
+    module2.constant('anotherConstant', 43);
+    var injector = createInjector(['myOtherModule']);
+
+    expect(injector.has('aConstant')).toBe(true);
+    expect(injector.has('anotherConstant')).toBe(true);
+  });
+
+  it('loads the transitively required modules of a module', function() {
+    var module1 = window.angular.module('myModule', []);
+    var module2 = window.angular.module('myOtherModule', ['myModule']);
+    var module3 = window.angular.module('myThirdModule', ['myOtherModule']);
+    module1.constant('aConstant', 42);
+    module2.constant('anotherConstant', 43);
+    module3.constant('aThirdConstant', 44);
+    var injector = createInjector(['myThirdModule']);
+
+    expect(injector.has('aConstant')).toBe(true);
+    expect(injector.has('anotherConstant')).toBe(true);
+    expect(injector.has('aThirdConstant')).toBe(true);
+  });
+
+  it('loads each module only once', function() {
+    window.angular.module('myModule', ['myOtherModule']);
+    window.angular.module('myOtherModule', ['myModule']);
+    createInjector(['myModule']);
+  });
 });
