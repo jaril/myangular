@@ -45,4 +45,15 @@ describe('modules', function() {
     expect(myModule).toBeDefined;
     expect(myModule.name).toBe('myModule');
   });
+
+  it('replaces a module when registered with the same name again', function() {
+    var myModule = window.angular.module('myModule', []);
+    var myNewModule = window.angular.module('myModule', []);
+    expect(myModule).not.toBe(myNewModule);
+  });
+
+  it('attaches the requires array to the registered module', function() {
+    var myModule = window.angular.module('myModule', ['myOtherModule']);
+    expect(myModule.requires).toEqual(['myOtherModule']);
+  })
 });
