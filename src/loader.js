@@ -6,6 +6,12 @@ function setupModuleLoader(window) {
   };
 
   var angular = ensure(window, 'angular', Object);
+
+  ensure(angular, 'module', function() {
+    return function() {
+      
+    };
+  });
 }
 
 module.exports = setupModuleLoader;

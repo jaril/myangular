@@ -2,7 +2,7 @@
 
 var setupModuleLoader = require('../src/loader');
 
-describe ('setupModuleLoader', function() {
+describe('setupModuleLoader', function() {
 
   beforeEach(function() {
     delete window.angular;
@@ -20,4 +20,29 @@ describe ('setupModuleLoader', function() {
     expect(window.angular).toBe(ng);
   })
 
+  it('exposes the angular module function', function() {
+    setupModuleLoader(window);
+    expect(window.angular.module).toBeDefined();
+  });
+
+  it('exposes the angular module function just once', function() {
+    setupModuleLoader(window);
+    var module = window.angular.module;
+    setupModuleLoader(window);
+    expect(window.angular.module).toBe(module);
+  });
+
+});
+
+describe('modules', function() {
+
+  beforeEach(function() {
+    setupModuleLoader(window);
+  });
+
+  it('allows registering a module', function() {
+    var myModule = window.angular.module('myModule', []);
+    expect(myModule).toBeDefined;
+    expect(myModule.name).toBe('myModule');
+  });
 });
