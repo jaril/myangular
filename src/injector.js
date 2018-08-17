@@ -17,10 +17,14 @@ function createInjector(modulesToLoad) {
 
   var invoke = function(fn) {
     var args = _.map(fn.$inject, function(token) {
-      return cache[token];
+      if (_.isString(token)) {
+        return cache[token];
+      } else {
+        throw 'Incorrect injection token! Expected a string, got ' + token;
+      }
     });
     return fn.apply(null, args);
-  }
+  };
 
   _.forEach(modulesToLoad, function loadModule(moduleName) {
     if (!loadedModules.hasOwnProperty(moduleName)) {
