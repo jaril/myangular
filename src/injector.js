@@ -15,15 +15,25 @@ function createInjector(modulesToLoad) {
     }
   };
 
-  var invoke = function(fn, self) {
+  var invoke = function(fn, self, locals) {
     var args = _.map(fn.$inject, function(token) {
       if (_.isString(token)) {
-        return cache[token];
+          return locals && locals.hasOwnProperty(token) ?
+            locals[token] :
+            cache[token];
       } else {
         throw 'Incorrect injection token! Expected a string, got ' + token;
       }
     });
     return fn.apply(self, args);
+  };
+
+  var annotate = function(fn) {
+    if (_.isArray(fn)) {
+      return fn.slice(0, fn.length - 1);
+    } else {
+      return fn.$inject;
+    }
   };
 
   _.forEach(modulesToLoad, function loadModule(moduleName) {
@@ -46,7 +56,8 @@ function createInjector(modulesToLoad) {
     get: function(key) {
       return cache[key];
     },
-    invoke: invoke
+    invoke: invoke,
+    annotate: annotate
   };
 }
 
