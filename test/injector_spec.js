@@ -105,4 +105,21 @@ describe('injector', function() {
       injector.invoke(fn);
     }).toThrow();
   });
+
+  it('invokes a function with the given this context', function() {
+    var module = window.angular.module('myModule', []);
+    module.constant('a', 1);
+    var injector = createInjector(['myModule']);
+
+    var obj = {
+      two: 2,
+      fn: function(one) {
+        console.log(this + ' is this');
+        return one + this.two;
+      }
+    };
+    obj.fn.$inject = ['a'];
+
+    expect(injector.invoke(obj.fn, obj)).toBe(3);
+  });
 });
