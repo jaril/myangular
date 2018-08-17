@@ -2,6 +2,10 @@
 
 var _ = require('lodash');
 
+var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
+var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
+var STRIP_COMMENTS = /(\/\/.*$)|(\/\*.*?\*\/)/mg;
+
 function createInjector(modulesToLoad) {
   var cache = {};
   var loadedModules = {};
@@ -31,8 +35,18 @@ function createInjector(modulesToLoad) {
   var annotate = function(fn) {
     if (_.isArray(fn)) {
       return fn.slice(0, fn.length - 1);
-    } else {
+    } else if (fn.$inject) {
       return fn.$inject;
+    } else if (!fn.length) {
+      return [];
+    } else {
+      var source = fn.toString().replace(STRIP_COMMENTS, '');
+      var argDeclaration = source.match(FN_ARGS);
+      return _.map(argDeclaration[1].split(','), function(argName) {
+        console.log(argName.match(FN_ARG));
+        return argName.match(FN_ARG)[2];
+        // return argName.trim();
+      });
     }
   };
 
