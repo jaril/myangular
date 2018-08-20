@@ -408,6 +408,19 @@ describe('injector', function() {
       injector.get('aProvider');
     }).toThrow();
   });
+
+  it('registers constants first to make them available to providers', function() {
+    var module = window.angular.module('myModule', []);
+
+    module.provider('a', function AProvider(b) {
+      this.$get = function() { return b; };
+    });
+
+    module.constant('b', 42);
+    var injector = createInjector(['myModule']);
+    
+    expect(injector.get('a')).toBe(42);
+  });
 });
 
 describe('annotate', function() {
