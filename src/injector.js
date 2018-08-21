@@ -1,6 +1,7 @@
 'use strict';
 
 var _ = require('lodash');
+var HashMap = require('./hash_map').HashMap;
 
 var FN_ARGS = /^function\s*[^\(]*\(\s*([^\)]*)\)/m;
 var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
@@ -19,7 +20,7 @@ function createInjector(modulesToLoad, strictDi) {
     return instanceInjector.invoke(provider.$get, provider);
   });
 
-  var loadedModules = {};
+  var loadedModules = new HashMap();
   var path = [];
   strictDi = (strictDi === true);
 
@@ -116,31 +117,6 @@ function createInjector(modulesToLoad, strictDi) {
     }
   };
 
-  // function getService(name) {
-  //   if (instanceCache.hasOwnProperty(name)) {
-  //     if (instanceCache[name] === INSTANTIATING) {
-  //       throw new Error('Circular dependency found: ' + name + ' <- ' + path.join(' <- '));
-  //     }
-  //     return instanceCache[name];
-  //   } else if (providerCache.hasOwnProperty(name)) {
-  //     return providerCache[name];
-  //   } else if (providerCache.hasOwnProperty(name + 'Provider')) {
-  //     path.unshift(name);
-  //     instanceCache[name] = INSTANTIATING;
-  //     try {
-  //       var provider = providerCache[name + 'Provider'];
-  //       var instance = instanceCache[name] = invoke(provider.$get, provider);
-  //       return instance;
-  //     } finally {
-  //       path.shift();
-  //       if (instanceCache[name] === INSTANTIATING) {
-  //         delete instanceCache[name];
-  //       }
-  //     }
-  //   }
-  // }
-
-
   function runInvokeQueue(queue) {
     _.forEach(queue, function(invokeArgs) {
       var service = providerInjector.get(invokeArgs[0]);
@@ -151,18 +127,25 @@ function createInjector(modulesToLoad, strictDi) {
   }
 
   var runBlocks = [];
-  _.forEach(modulesToLoad, function loadModule(moduleName) {
-    if (!loadedModules.hasOwnProperty(moduleName)) {
-      loadedModules[moduleName] = true;
-      var module = window.angular.module(moduleName);
-      _.forEach(module.requires, loadModule);
-      runInvokeQueue(module._invokeQueue);
-      runInvokeQueue(module._configBlocks);
-      runBlocks = runBlocks.concat(module._runBlocks);
+  _.forEach(modulesToLoad, function loadModule(module) {
+    if (!loadedModules.get(module)) {
+      loadedModules.put(module, true)
+      if (_.isString(module)) {
+        if (!loadedModules.hasOwnProperty(module)) {
+          loadedModules[module] = true;
+          module = window.angular.module(module);
+          _.forEach(module.requires, loadModule);
+          runInvokeQueue(module._invokeQueue);
+          runInvokeQueue(module._configBlocks);
+          runBlocks = runBlocks.concat(module._runBlocks);
+        }
+      } else if (_.isFunction(module) || _.isArray(module)) {
+        runBlocks.push(providerInjector.invoke(module));
+      }
     }
   });
 
-  _.forEach(runBlocks, function(runBlock) {
+  _.forEach(_.compact(runBlocks), function(runBlock) {
     instanceInjector.invoke(runBlock);
   });
 
