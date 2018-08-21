@@ -101,6 +101,16 @@ function createInjector(modulesToLoad, strictDi) {
     };
   }
 
+  function enforceReturnValue(factoryFn) {
+    return function() {
+      var value = instanceInjector.invoke(factoryFn);
+      if (_.isUndefined(value)) {
+        throw 'factory must return a value';
+      }
+      return value;
+    };
+  }
+
   providerCache.$provide = {
     constant: function(key, value) {
       if (key === 'hasOwnProperty') {
@@ -114,6 +124,18 @@ function createInjector(modulesToLoad, strictDi) {
         provider = providerInjector.instantiate(provider);
       }
       providerCache[key + 'Provider'] = provider;
+    },
+    factory: function(key, factoryFn, enforce) {
+      this.provider(key,
+        {$get: enforce === false ? factoryFn : enforceReturnValue(factoryFn)});
+    },
+    value: function(key, value) {
+      this.factory(key, _.constant(value), false);
+    },
+    service: function(key, Constructor) {
+      this.factory(key, function() {
+        return instanceInjector.instantiate(Constructor);
+      });
     }
   };
 
@@ -129,7 +151,7 @@ function createInjector(modulesToLoad, strictDi) {
   var runBlocks = [];
   _.forEach(modulesToLoad, function loadModule(module) {
     if (!loadedModules.get(module)) {
-      loadedModules.put(module, true)
+      loadedModules.put(module, true);
       if (_.isString(module)) {
         if (!loadedModules.hasOwnProperty(module)) {
           loadedModules[module] = true;
