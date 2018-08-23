@@ -725,6 +725,56 @@ describe('injector', function() {
 
     expect(injector.get('aService')).toBe(injector.get('aService'));
   });
+
+  it('allows changing an instance using a decorator', function() {
+    var module = window.angular.module('myModule', []);
+    module.factory('aValue', function() {
+      return {aKey: 42};
+    });
+    module.decorator('aValue', function($delegate) {
+      $delegate.decoratedKey = 43;
+    });
+
+    var injector = createInjector(['myModule']);
+
+    expect(injector.get('aValue').aKey).toBe(42);
+    expect(injector.get('aValue').decoratedKey).toBe(43);
+  });
+
+  it('allows multiple decorators per service', function() {
+    var module = window.angular.module('myModule', []);
+    module.factory('aValue', function() {
+        return {};
+    });
+
+    module.decorator('aValue', function($delegate) {
+      $delegate.decoratedKey = 42;
+    });
+    module.decorator('aValue', function($delegate) {
+      $delegate.otherDecoratedKey = 43;
+    });
+
+    var injector = createInjector(['myModule']);
+
+    expect(injector.get('aValue').decoratedKey).toBe(42);
+    expect(injector.get('aValue').otherDecoratedKey).toBe(43);
+  });
+
+  it('uses dependency injection with decorators', function() {
+    var module = window.angular.module('myModule', []);
+    module.factory('aValue', function() {
+      return {};
+    });
+
+    module.constant('a', 42);
+    module.decorator('aValue', function(a, $delegate) {
+      $delegate.decoratedKey = a;
+    });
+
+    var injector = createInjector(['myModule']);
+    
+    expect(injector.get('aValue').decoratedKey).toBe(42);
+  });
 });
 
 describe('annotate', function() {
