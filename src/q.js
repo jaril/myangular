@@ -2,7 +2,11 @@ function $QProvider() {
 
   this.$get = function() {
 
+    function Promise() {
+    }
+
     function Deferred() {
+      this.promise = new Promise();
     }
 
     function defer() {
@@ -14,7 +18,7 @@ function $QProvider() {
     };
 
   };
-  
-};
 
-module.exports = $QProvider
+}
+
+module.exports = $QProvider;
