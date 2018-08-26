@@ -2,6 +2,16 @@ var _ = require('lodash');
 // var parse = require('./parse');
 
 function $RootScopeProvider() {
+
+  var TTL = 10;
+
+  this.digestTtl = function(value) {
+    if (_.isNumber(value)) {
+      TTL = value;
+    }
+    return TTL;
+  };
+
   this.$get = ['$parse', function($parse) {
 
     function Scope() {
@@ -93,7 +103,7 @@ function $RootScopeProvider() {
     };
 
     Scope.prototype.$digest = function() {
-      var ttl = 10;
+      var ttl = TTL;
       var dirty;
       this.$root.$$lastDirtyWatch = null; //set to null at the beginning of every digest
       this.$beginPhase("$digest"); // starting digest phase
@@ -115,7 +125,7 @@ function $RootScopeProvider() {
         }
         dirty = this.$$digestOnce();
         if ((dirty || this.$$asyncQueue.length) && !(ttl--)) { // will throw when both values = true. when ttl-- = -1, !-1 is true. ie throws after 10 repeats
-          throw "10 digest iterations reached";
+          throw TTL + " digest iterations reached";
         }
       } while (dirty || this.$$asyncQueue.length);
 
