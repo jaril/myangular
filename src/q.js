@@ -41,11 +41,14 @@ function $QProvider() {
     }
 
     function processQueue(state) {
+      //state.pending is emptied out so callbacks are invoked only once
+      //note: better to do this is in a try/finally block in case an error is thrown
+      //bad pattern to delete the original pending array before finishing invoking all the callbacks
       var pending = state.pending;
       delete state.pending;
       _.forEach(pending, function(onFulfilled) {
         onFulfilled(state.value);
-      })
+      });
     }
 
     return {
