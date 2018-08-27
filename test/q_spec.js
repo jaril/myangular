@@ -98,4 +98,51 @@ describe("$q", function() {
     $rootScope.$apply();
     expect(promiseSpy.calls.count()).toEqual(1);
   });
+
+  it('resolves a listener added after resolution', function() {
+    var d = $q.defer();
+    d.resolve(42);
+    $rootScope.$apply();
+
+    var promiseSpy = jasmine.createSpy();
+    d.promise.then(promiseSpy);
+    $rootScope.$apply();
+
+    expect(promiseSpy).toHaveBeenCalledWith(42);
+  });
+
+  it('may have multiple callbacks', function() {
+    var d = $q.defer();
+
+    var firstSpy = jasmine.createSpy();
+    var secondSpy = jasmine.createSpy();
+    d.promise.then(firstSpy);
+    d.promise.then(secondSpy);
+
+    d.resolve(42);
+    $rootScope.$apply();
+
+    expect(firstSpy).toHaveBeenCalledWith(42);
+    expect(secondSpy).toHaveBeenCalledWith(42);
+  });
+
+  it('invokes callbacks once', function() {
+    var d = $q.defer();
+    var firstSpy = jasmine.createSpy();
+    var secondSpy = jasmine.createSpy();
+
+    d.promise.then(firstSpy);
+    d.resolve(42);
+    $rootScope.$apply();
+    expect(firstSpy.calls.count()).toBe(1);
+    expect(secondSpy.calls.count()).toBe(0);
+
+    d.promise.then(secondSpy);
+    expect(firstSpy.calls.count()).toBe(1);
+    expect(secondSpy.calls.count()).toBe(0);
+
+    $rootScope.$apply();
+    expect(firstSpy.calls.count()).toBe(1);
+    expect(secondSpy.calls.count()).toBe(1);
+  });
 });

@@ -1,3 +1,5 @@
+var _  = require('lodash');
+
 function $QProvider() {
 
   this.$get = ['$rootScope', function ($rootScope) {
@@ -7,7 +9,11 @@ function $QProvider() {
 
     Promise.prototype.then = function(onFulfilled) {
       //onFulfilled is the callback to be called on resolve
-      this.$$state.pending = onFulfilled;
+      this.$$state.pending = this.$$state.pending || [];
+      this.$$state.pending.push(onFulfilled);
+      if (this.$$state.status > 0) {
+        scheduleProcessQueue(this.$$state);
+      }
     };
 
     function Deferred() {
@@ -35,7 +41,11 @@ function $QProvider() {
     }
 
     function processQueue(state) {
-      state.pending(state.value);
+      var pending = state.pending;
+      delete state.pending;
+      _.forEach(pending, function(onFulfilled) {
+        onFulfilled(state.value);
+      })
     }
 
     return {
