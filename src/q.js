@@ -40,9 +40,16 @@ function $QProvider() {
       if (this.promise.$$state.status) {
         return;
       }
-      this.promise.$$state.value = value;
-      this.promise.$$state.status = 1;
-      scheduleProcessQueue(this.promise.$$state);
+      if (value && _.isFunction(value.then)) { //if the function returns a promise
+        value.then(
+          _.bind(this.resolve, this),
+          _.bind(this.reject, this)
+        );
+      } else {
+        this.promise.$$state.value = value;
+        this.promise.$$state.status = 1;
+        scheduleProcessQueue(this.promise.$$state);
+      }
     };
 
     Deferred.prototype.reject = function(reason) {
@@ -82,7 +89,7 @@ function $QProvider() {
             deferred.reject(state.value);
           }
         } catch (e) {
-          deferred.reject(e)
+          deferred.reject(e);
         }
       });
     }
