@@ -303,7 +303,7 @@ describe("$q", function() {
 
   it('treats catch return value as resolution', function() {
     var d = $q.defer();
-    
+
     var fulfilledSpy = jasmine.createSpy();
     d.promise
       .catch(function() {
@@ -315,5 +315,32 @@ describe("$q", function() {
     $rootScope.$apply();
 
     expect(fulfilledSpy).toHaveBeenCalledWith(42);
+  });
+
+  it('rejects chained promise when handler throws', function() {
+    var d = $q.defer();
+
+    var rejectedSpy = jasmine.createSpy();
+    d.promise.then(function() {
+      throw 'fail';
+    }).catch(rejectedSpy);
+    d.resolve(42);
+    $rootScope.$apply();
+
+    expect(rejectedSpy).toHaveBeenCalledWith('fail');
+  });
+
+  it('does not reject current promise when handler throws', function() {
+    var d = $q.defer();
+
+    var rejectedSpy = jasmine.createSpy();
+    d.promise.then(function() {
+      throw 'fail';
+    });
+    d.promise.catch(rejectedSpy);
+    d.resolve(42);
+    $rootScope.$apply();
+    
+    expect(rejectedSpy).not.toHaveBeenCalled();
   });
 });
