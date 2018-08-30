@@ -113,6 +113,12 @@ function $QProvider() {
       return new Deferred();
     }
 
+    function reject(rejection) {
+      var d = defer();
+      d.reject(rejection);
+      return d.promise;
+    }
+
     function scheduleProcessQueue(state) {
       $rootScope.$evalAsync(function() {
         processQueue(state);
@@ -143,7 +149,8 @@ function $QProvider() {
     }
 
     return {
-      defer: defer
+      defer: defer,
+      reject: reject
     };
   }];
 
