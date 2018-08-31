@@ -176,13 +176,24 @@ function $QProvider() {
       });
     }
 
-    return {
+    var $Q = function Q(resolver) {
+      if (!_.isFunction(resolver)) {
+        throw 'Expected function, got ' + resolver + '!';
+      }
+      var d = defer();
+      resolver(
+        _.bind(d.resolve, d),
+        _.bind(d.reject, d));
+      return d.promise;
+    };
+
+    return _.assignIn($Q, {
       defer: defer,
       reject: reject,
       when: when,
       resolve: when,
       all: all
-    };
+    });
   }];
 
 }

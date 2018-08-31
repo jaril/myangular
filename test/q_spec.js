@@ -770,13 +770,54 @@ describe("$q", function() {
     it('wraps non-promises in the input collection', function() {
       var promise = $q.all([$q.when(1), 2, 3]);
       var fulfilledSpy = jasmine.createSpy();
-      
+
       promise.then(fulfilledSpy);
       $rootScope.$apply();
 
       expect(fulfilledSpy).toHaveBeenCalledWith([1, 2, 3]);
     });
 
+  });
+
+  describe('ES6 style', function() {
+
+    it('is a function', function() {
+      expect($q instanceof Function).toBe(true);
+    });
+
+    it('expects a function as an argument', function() {
+      expect($q).toThrow();
+      $q(_.noop);
+    });
+
+    it('returns a promise', function() {
+      expect($q(_.noop)).toBeDefined();
+      expect($q(_.noop).then).toBeDefined();
+    });
+
+    it('calls function with a resolve function', function() {
+      var fulfilledSpy = jasmine.createSpy();
+
+      $q(function(resolve) {
+        resolve('ok');
+      }).then(fulfilledSpy);
+      $rootScope.$apply();
+
+      expect(fulfilledSpy).toHaveBeenCalledWith('ok');
+    });
+
+    it('calls function with a reject function', function() {
+      var fulfilledSpy = jasmine.createSpy();
+      var rejectedSpy = jasmine.createSpy();
+
+      $q(function(resolve, reject) {
+        reject('fail');
+      }).then(fulfilledSpy, rejectedSpy);
+      $rootScope.$apply();
+
+      expect(fulfilledSpy).not.toHaveBeenCalled();
+      expect(rejectedSpy).toHaveBeenCalledWith('fail');
+    });
 
   });
 });
