@@ -857,7 +857,7 @@ describe("$q", function() {
       var d = $$q.defer();
       d.promise.then(_.noop);
       d.resolve('ok');
-      
+
       var watchSpy = jasmine.createSpy();
       $rootScope.$watch(watchSpy);
 
