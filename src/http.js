@@ -26,7 +26,8 @@ function $HttpProvider() {
       var deferred = $q.defer();
 
       var config = _.extend({
-        method: 'GET'
+        method: 'GET',
+        transformRequest: defaults.transformRequest
       }, requestConfig);
       config.headers = mergeHeaders(requestConfig);
 
@@ -35,7 +36,12 @@ function $HttpProvider() {
         config.withCredentials = defaults.withCredentials;
       }
 
-      if (_.isUndefined(config.data)) {
+      var reqData = transformData(
+        config.data,
+        headersGetter(config.headers),
+        config.transformRequest);
+
+      if (_.isUndefined(reqData)) {
         _.forEach(config.headers, function(v, k) {
           if (k.toLowerCase() === 'content-type') {
             delete config.headers[k];
@@ -108,22 +114,37 @@ function $HttpProvider() {
       }
 
       function parseHeaders(headers) {
-        var lines = headers.split('\n');
-        return _.transform(lines, function(result, line) {
-          var separatorAt = line.indexOf(':');
-          var name = _.trim(line.substr(0, separatorAt)).toLowerCase();
-          var value = _.trim(line.substr(separatorAt + 1));
-          if (name) {
-            result[name] = value;
-          }
-        }, {});
+        if (_.isObject(headers)) {
+          return _.transform(headers, function(result, v, k) {
+            result[_.trim(k.toLowerCase())] = _.trim(v);
+          }, {});
+        } else {
+          var lines = headers.split('\n');
+          return _.transform(lines, function(result, line) {
+            var separatorAt = line.indexOf(':');
+            var name = _.trim(line.substr(0, separatorAt)).toLowerCase();
+            var value = _.trim(line.substr(separatorAt + 1));
+            if (name) {
+              result[name] = value;
+            }
+          }, {});
+        }
       }
 
+      function transformData(data, headers, transform) {
+        if (_.isFunction(transform)) {
+          return transform(data, headers);
+        } else {
+          return _.reduce(transform, function(data, fn) {
+            return fn(data, headers);
+          }, data);
+        }
+      }
 
       $httpBackend(
         config.method,
         config.url,
-        config.data,
+        reqData,
         done,
         config.headers,
         config.withCredentials
