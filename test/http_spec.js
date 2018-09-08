@@ -577,7 +577,7 @@ describe('$http', function() {
 
   it('does not try to parse interpolation expr as JSON', function() {
     var response;
-    
+
     $http({
       method: 'GET',
       url: 'http://teropa.info'
@@ -590,4 +590,160 @@ describe('$http', function() {
     expect(response.data).toEqual('{{expr}}');
   });
 
+  it('adds params to URL', function() {
+    $http({
+      url: 'http://teropa.info',
+      params: {
+        a: 42
+      }
+    });
+
+    expect(requests[0].url).toBe('http://teropa.info?a=42');
+  });
+
+  it('adds additional params to URL', function() {
+    $http({
+      url: 'http://teropa.info?a=42',
+      params: {
+        b: 42
+      }
+    });
+
+    expect(requests[0].url).toBe('http://teropa.info?a=42&b=42');
+  });
+
+  it('escapes url characters in params', function() {
+    $http({
+      url: 'http://teropa.info',
+      params: {
+        '==': '&&'
+      }
+    });
+
+    expect(requests[0].url).toBe('http://teropa.info?%3D%3D=%26%26');
+  });
+
+  it('does not attach null or undefined params', function() {
+    $http({
+      url: 'http://teropa.info',
+      params: {
+        a: null,
+        b: undefined
+      }
+    });
+
+    expect(requests[0].url).toBe('http://teropa.info');
+  });
+
+  it('attaches multiple params from arrays', function() {
+    $http({
+      url: 'http://teropa.info',
+      params: {
+        a: [42, 43]
+      }
+    });
+
+    expect(requests[0].url).toBe('http://teropa.info?a=42&a=43');
+  });
+
+  it('serializes objects to json', function() {
+    $http({
+      url: 'http://teropa.info',
+      params: {
+        a: {b: 42}
+      }
+    });
+
+    expect(requests[0].url).toBe('http://teropa.info?a=%7B%22b%22%3A42%7D');
+  });
+
+  it('allows substituting param serializer', function() {
+    $http({
+      url: 'http://teropa.info',
+      params: {
+        a: 42,
+        b: 43
+      },
+      paramSerializer: function(params) {
+        return _.map(params, function(v, k) {
+          return k + '=' + v + 'lol';
+        }).join('&');
+      }
+    });
+
+    expect(requests[0].url)
+    .toEqual('http://teropa.info?a=42lol&b=43lol');
+  });
+
+  it('makes default param serializer available through DI', function() {
+    var injector = createInjector(['ng']);
+    injector.invoke(function($httpParamSerializer) {
+      var result = $httpParamSerializer({a: 42, b: 43});
+      expect(result).toEqual('a=42&b=43');
+    });
+  });
+
+  describe('JQ-like param serialization', function() {
+
+    it('is possible', function() {
+      $http({
+        url: 'http://teropa.info',
+        params: {
+          a: 42,
+          b: 43
+        },
+        paramSerializer: '$httpParamSerializerJQLike'
+      });
+
+      expect(requests[0].url).toEqual('http://teropa.info?a=42&b=43');
+    });
+
+    it('uses square brackets in arrays', function() {
+      $http({
+        url: 'http://teropa.info',
+        params: {
+          a: [42, 43]
+        },
+        paramSerializer: '$httpParamSerializerJQLike'
+      });
+
+      expect(requests[0].url).toEqual('http://teropa.info?a%5B%5D=42&a%5B%5D=43');
+    });
+
+    it('uses square brackets in objects', function() {
+      $http({
+        url: 'http://teropa.info',
+        params: {
+          a: {b: 42, c: 43}
+        },
+        paramSerializer: '$httpParamSerializerJQLike'
+      });
+
+      expect(requests[0].url).toEqual('http://teropa.info?a%5Bb%5D=42&a%5Bc%5D=43');
+    });
+
+    it('supports nesting in objects', function() {
+      $http({
+        url: 'http://teropa.info',
+        params: {
+          a: {b: {c: 42}}
+        },
+        paramSerializer: '$httpParamSerializerJQLike'
+      });
+
+      expect(requests[0].url).toEqual('http://teropa.info?a%5Bb%5D%5Bc%5D=42');
+    });
+
+    it('appends array indexes when items are objects', function() {
+      $http({
+        url: 'http://teropa.info',
+        params: {
+          a: [{b: 42}]
+        },
+        paramSerializer: '$httpParamSerializerJQLike'
+      });
+
+      expect(requests[0].url).toEqual('http://teropa.info?a%5B0%5D%5Bb%5D=42');
+    });
+  });
 });
