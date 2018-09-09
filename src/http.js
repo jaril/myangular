@@ -235,6 +235,42 @@ function $HttpProvider() {
     }
 
     $http.defaults = defaults;
+    // $http.get = function(url, config) {
+    //   return $http(_.extend(config || {}, {
+    //     method: 'GET',
+    //     url: url
+    //   }));
+    // };
+    // $http.head = function(url, config) {
+    //   return $http(_.extend(config || {}, {
+    //     method: 'HEAD',
+    //     url: url
+    //   }));
+    // };
+    // $http.delete = function(url, config) {
+    //   return $http(_.extend(config || {}, {
+    //     method: 'DELETE',
+    //     url: url
+    //   }));
+    // };
+    _.forEach(['get', 'head', 'delete'], function(method) {
+      $http[method] = function(url, config) {
+        return $http(_.extend(config || {}, {
+          method: method.toUpperCase(),
+          url: url
+        }));
+      };
+    });
+    _.forEach(['post', 'put', 'patch'], function(method) {
+      $http[method] = function(url, data, config) {
+        return $http(_.extend(config || {}, {
+          method: method.toUpperCase(),
+          url: url,
+          data: data
+        }));
+      };
+    });
+
     return $http;
   }];
 }
