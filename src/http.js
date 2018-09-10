@@ -253,28 +253,25 @@ function $HttpProvider() {
         promise = promise.then(interceptor.response, interceptor.responseError);
       });
 
+      promise.success = function(fn) {
+        promise.then(function(response) {
+          fn(response.data, response.status, response.headers, config);
+        });
+        return promise;
+      };
+
+      promise.error = function(fn) {
+        promise.catch(function(response) {
+          fn(response.data, response.status, response.headers, config);
+        });
+        return promise;
+      };
+
       return promise;
     }
 
     $http.defaults = defaults;
-    // $http.get = function(url, config) {
-    //   return $http(_.extend(config || {}, {
-    //     method: 'GET',
-    //     url: url
-    //   }));
-    // };
-    // $http.head = function(url, config) {
-    //   return $http(_.extend(config || {}, {
-    //     method: 'HEAD',
-    //     url: url
-    //   }));
-    // };
-    // $http.delete = function(url, config) {
-    //   return $http(_.extend(config || {}, {
-    //     method: 'DELETE',
-    //     url: url
-    //   }));
-    // };
+    
     _.forEach(['get', 'head', 'delete'], function(method) {
       $http[method] = function(url, config) {
         return $http(_.extend(config || {}, {
