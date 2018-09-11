@@ -7,7 +7,7 @@ var _ = require('lodash');
 
 describe('$http', function() {
 
-  var $http, $rootScope;
+  var $http, $rootScope, $q;
   var xhr, requests;
 
   beforeEach(function() {
@@ -15,6 +15,7 @@ describe('$http', function() {
     var injector = createInjector(['ng']);
     $http = injector.get('$http');
     $rootScope = injector.get('$rootScope');
+    $q = injector.get('$q');
   });
 
   beforeEach(function() {
@@ -26,6 +27,13 @@ describe('$http', function() {
   });
   afterEach(function() {
     xhr.restore();
+  });
+
+  beforeEach(function() {
+    jasmine.clock().install();
+  });
+  afterEach(function() {
+    jasmine.clock().uninstall();
   });
 
   it('is a function', function() {
@@ -1006,6 +1014,30 @@ describe('$http', function() {
     expect(status).toBe(401);
     expect(headers('Cache-Control')).toBe('no-cache');
     expect(config.method).toBe('GET');
+  });
+
+  it('allows aborting a request with a Promise', function() {
+    var timeout = $q.defer();
+    $http.get('http://teropa.info', {
+      timeout: timeout.promise
+    });
+
+    $rootScope.$apply();
+    timeout.resolve();
+    $rootScope.$apply();
+
+    expect(requests[0].aborted).toBe(true);
+  });
+
+  it('allows aborting a request after a timeout', function() {
+    $http.get('http://teropa.info', {
+      timeout: 5000
+    });
+
+    $rootScope.$apply();
+    jasmine.clock().tick(5001);
+    
+    expect(requests[0].aborted).toBe(true);
   });
 
   describe('JQ-like param serialization', function() {

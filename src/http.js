@@ -185,6 +185,7 @@ function $HttpProvider() {
         reqData,
         done,
         config.headers,
+        config.timeout,
         config.withCredentials
       );
 
@@ -271,7 +272,7 @@ function $HttpProvider() {
     }
 
     $http.defaults = defaults;
-    
+
     _.forEach(['get', 'head', 'delete'], function(method) {
       $http[method] = function(url, config) {
         return $http(_.extend(config || {}, {
