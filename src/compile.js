@@ -6,6 +6,11 @@ var $ = require('jquery');
 function $CompileProvider($provide) {
 
   var hasDirectives = {};
+  var PREFIX_REGEXP = /(x[\:\-_]|data[\:\-_])/i;
+
+  function directiveNormalize(name) {
+    return _.camelCase(name.replace(PREFIX_REGEXP, ''));
+  }
 
   this.directive = function(name, directiveFactory) {
     if (_.isString(name)) {
@@ -44,7 +49,7 @@ function $CompileProvider($provide) {
 
     function collectDirectives(node) {
       var directives = [];
-      var normalizedNodeNames = _.camelCase(nodeName(node).toLowerCase());
+      var normalizedNodeNames = directiveNormalize(nodeName(node).toLowerCase());
       addDirective(directives, normalizedNodeNames);
       return directives;
     }
