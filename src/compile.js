@@ -8,8 +8,32 @@ function $CompileProvider($provide) {
   var hasDirectives = {};
   var PREFIX_REGEXP = /(x[\:\-_]|data[\:\-_])/i;
 
+  var BOOLEAN_ATTRS = {
+    multiple: true,
+    selected: true,
+    checked: true,
+    disabled: true,
+    readOnly: true,
+    required: true,
+    open: true
+  };
+
+  var BOOLEAN_ELEMENTS = {
+    INPUT: true,
+    SELECT: true,
+    OPTION: true,
+    TEXTAREA: true,
+    BUTTON: true,
+    FORM: true,
+    DETAILS: true
+  };
+
   function directiveNormalize(name) {
     return _.camelCase(name.replace(PREFIX_REGEXP, ''));
+  }
+
+  function isBooleanAttribute(node, attrName) {
+    return BOOLEAN_ATTRS[attrName] && BOOLEAN_ELEMENTS[node.nodeName];
   }
 
   this.directive = function(name, directiveFactory) {
@@ -47,7 +71,7 @@ function $CompileProvider($provide) {
     function compileNodes($compileNodes) {
       _.forEach($compileNodes, function(node) {
         var attrs = {};
-        var directives = collectDirectives(node);
+        var directives = collectDirectives(node, attrs);
         var terminal = applyDirectivesToNode(directives, node, attrs);
         if (!terminal && node.childNodes && node.childNodes.length) {
           compileNodes(node.childNodes);
@@ -55,7 +79,7 @@ function $CompileProvider($provide) {
       });
     }
 
-    function collectDirectives(node) {
+    function collectDirectives(node, attrs) {
       var directives = [];
       var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
       addDirective(directives, normalizedNodeName, 'E');
@@ -80,6 +104,10 @@ function $CompileProvider($provide) {
           }
           normalizedAttrName = directiveNormalize(name.toLowerCase());
           addDirective(directives, normalizedAttrName, 'A', attrStartName, attrEndName);
+          attrs[normalizedAttrName] = attr.value.trim();
+          if (isBooleanAttribute(node, normalizedAttrName)) {
+            attrs[normalizedAttrName] = true;
+          }
         });
         _.forEach(node.classList, function(cls) {
           var normalizedClassName = directiveNormalize(cls);
@@ -172,7 +200,7 @@ function $CompileProvider($provide) {
         }
 
         if (directive.compile) {
-          directive.compile($compileNode);
+          directive.compile($compileNode, attrs);
         }
 
         if (directive.terminal) {
