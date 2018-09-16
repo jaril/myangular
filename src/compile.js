@@ -67,15 +67,23 @@ function $CompileProvider($provide) {
 
     function Attributes(element) {
       this.$$element = element;
+      this.$attr = {};
     }
 
-    Attributes.prototype.$set = function(key, value, writeAttr) {
+    Attributes.prototype.$set = function(key, value, writeAttr, attrName) {
       this[key] = value;
       if (isBooleanAttribute(this.$$element[0], key)) {
         this.$$element.prop(key, value);
       }
+      if (!attrName) {
+        if (this.$attr[key]) {
+          attrName = this.$attr[key];
+        } else {
+          attrName = this.$attr[key] = _.kebabCase(key, '-');
+        }
+      }
       if (writeAttr !== false) {
-        this.$$element.attr(key, value);
+        this.$$element.attr(attrName, value);
       }
     };
 
@@ -109,7 +117,9 @@ function $CompileProvider($provide) {
               normalizedAttrName[6].toLowerCase() +
               normalizedAttrName.substring(7)
             );
+            normalizedAttrName = directiveNormalize(name.toLowerCase());
           }
+          attrs.$attr[normalizedAttrName] = name;
           var directiveNName = normalizedAttrName.replace(/(Start|End)$/, '');
           if (directiveIsMultiElement(directiveNName)) {
             if (/Start$/.test(normalizedAttrName)) {
