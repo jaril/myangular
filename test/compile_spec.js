@@ -873,5 +873,35 @@ describe('$compile', function() {
       );
     });
 
+    it('adds an attribute from a class directive', function() {
+      registerAndCompile(
+        'myDirective',
+        '<div class="my-directive"></div>',
+        function(element, attrs) {
+        expect(attrs.hasOwnProperty('myDirective')).toBe(true);
+        }
+      );
+    });
+
+    it('supports values for class directive attributes', function() {
+      registerAndCompile(
+        'myDirective',
+        '<div class="my-directive: my attribute value"></div>',
+        function(element, attrs) {
+          expect(attrs.myDirective).toEqual('my attribute value');
+        }
+      );
+    });
+
+    it('terminates class directive attribute value at semicolon', function() {
+      registerAndCompile(
+        'myDirective',
+        '<div class="my-directive: my attribute value; some-other-class"></div>',
+        function(element, attrs) {
+          expect(attrs.myDirective).toEqual('my attribute value');
+        }
+      );
+    });
+
   });
 });

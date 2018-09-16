@@ -900,7 +900,7 @@ describe("Scope", function() {
       expect(counter).toBe(0); //note that evalAsync only counter++ after
       setTimeout(function() {
         expect(counter).toBe(1); //here is after
-      }, 1000);
+      }, 1500);
     });
 
     it('uses the same array of old and new values on first run', function() {
