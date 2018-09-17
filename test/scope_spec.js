@@ -895,12 +895,12 @@ describe("Scope", function() {
       ], function(newValues, oldValues, scope) {
         counter++;
       });
-      // scope.$digest(); //can comment out the $digest here
+      scope.$digest(); //can comment out the $digest here
 
-      expect(counter).toBe(0); //note that evalAsync only counter++ after
-      setTimeout(function() {
-        expect(counter).toBe(1); //here is after
-      }, 1500);
+      expect(counter).toBe(1); //note that evalAsync only counter++ after
+      // setTimeout(function() {
+      //   expect(counter).toBe(1); //here is after
+      // }, 0);
     });
 
     it('uses the same array of old and new values on first run', function() {
