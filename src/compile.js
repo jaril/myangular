@@ -51,6 +51,9 @@ function $CompileProvider($provide) {
             directive.name = directive.name || name;
             directive.index = i;
             directive.priority = directive.priority || 0;
+            if (directive.link && !directive.compile) {
+              directive.compile = _.constant(directive.link);
+            }
             return directive;
           });
         }]);
