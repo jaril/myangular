@@ -324,7 +324,7 @@ function $CompileProvider($provide) {
       var $compileNode = $(compileNode);
       var terminalPriority = -Number.MAX_VALUE;
       var terminal = false;
-      var linkFns = [];
+      var preLinkFns = [], postLinkFns = [];
 
       _.forEach(directives, function(directive) {
         if (directive.$$start) {
@@ -336,8 +336,15 @@ function $CompileProvider($provide) {
 
         if (directive.compile) {
           var linkFn = directive.compile($compileNode, attrs);
-          if (linkFn) {
-            linkFns.push(linkFn);
+          if (_.isFunction(linkFn)) {
+            postLinkFns.push(linkFn);
+          } else if (linkFn) {
+            if (linkFn.pre) {
+              preLinkFns.push(linkFn.pre);
+            }
+            if (linkFn.post) {
+              postLinkFns.push(linkFn.post);
+            }
           }
         }
 
@@ -348,11 +355,17 @@ function $CompileProvider($provide) {
       });
 
       function nodeLinkFn(childLinkFn, scope, linkNode) {
+        var $element = $(linkNode);
+
+        _.forEach(preLinkFns, function(linkFn) {
+          linkFn(scope, $element, attrs);
+        });
+
         if (childLinkFn) {
           childLinkFn(scope, linkNode.childNodes);
         }
-        _.forEach(linkFns, function(linkFn) {
-          var $element = $(linkNode);
+
+        _.forEachRight(postLinkFns, function(linkFn) {
           linkFn(scope, $element, attrs);
         });
       }
