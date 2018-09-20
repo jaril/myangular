@@ -169,17 +169,23 @@ function $CompileProvider($provide) {
       });
 
       function compositeLinkFn(scope, linkNodes) {
+        var stableNodeList = [];
+        _.forEach(linkFns, function(linkFn) {
+          var nodeIdx = linkFn.idx;
+          stableNodeList[nodeIdx] = linkNodes[nodeIdx];
+        });
+
         _.forEach(linkFns, function(linkFn) {
           if (linkFn.nodeLinkFn) {
             linkFn.nodeLinkFn(
               linkFn.childLinkFn,
               scope,
-              linkNodes[linkFn.idx]
+              stableNodeList[linkFn.idx]
             );
           } else {
             linkFn.childLinkFn(
               scope,
-              linkNodes[linkFn.idx].childNodes
+              stableNodeList[linkFn.idx].childNodes
             );
           }
         });
@@ -192,8 +198,12 @@ function $CompileProvider($provide) {
       var directives = [];
       var match;
       var normalizedNodeName = directiveNormalize(nodeName(node).toLowerCase());
+
+      //element check
       addDirective(directives, normalizedNodeName, 'E');
+
       if (node.nodeType === Node.ELEMENT_NODE) {
+        //attr check
         _.forEach(node.attributes, function(attr) {
           var attrStartName, attrEndName;
           var name = attr.name;
@@ -206,7 +216,7 @@ function $CompileProvider($provide) {
             );
             normalizedAttrName = directiveNormalize(name.toLowerCase());
           }
-          attrs.$attr[normalizedAttrName] = name;
+          attrs.$attr[normalizedAttrName] = name; //add it to attrs.$attr
           var directiveNName = normalizedAttrName.replace(/(Start|End)$/, '');
           if (directiveIsMultiElement(directiveNName)) {
             if (/Start$/.test(normalizedAttrName)) {
@@ -224,6 +234,8 @@ function $CompileProvider($provide) {
             }
           }
         });
+
+        //class check
         _.forEach(node.classList, function(cls) {
           var normalizedClassName = directiveNormalize(cls);
           if (addDirective(directives, normalizedClassName, 'C')) {
@@ -240,6 +252,8 @@ function $CompileProvider($provide) {
             className = className.substr(match.index + match[0].length);
           }
         }
+
+        //comnent check
       } else if (node.nodeType === Node.COMMENT_NODE) {
         match = /^\s*directive\:\s*([\d\w\-_]+)\s*(.*)$/.exec(node.nodeValue);
         if (match) {
@@ -296,7 +310,8 @@ function $CompileProvider($provide) {
           match = directive;
         });
       }
-      return match;
+      return match; //just used as a boolean return value in collectDirectives
+      //note there's some bad patterns where addDirective is called within the if block
     }
 
     function groupScan(node, startAttr, endAttr) {
