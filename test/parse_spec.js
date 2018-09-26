@@ -668,17 +668,6 @@ describe("parse", function() {
       });
     }]).get('$parse');
 
-    // register('upcase', function() {
-    //   return function(s) {
-    //     return s.toUpperCase();
-    //   };
-    // });
-    // register('exclamate', function() {
-    //   return function(s) {
-    //     return s + '!';
-    //   };
-    // });
-
     var fn = parse('"hello" | upcase | exclamate');
     expect(fn()).toEqual('HELLO!');
   });
@@ -693,12 +682,6 @@ describe("parse", function() {
       });
     }]).get('$parse');
 
-    // register('repeat', function() {
-    //   return function(s, times) {
-    //     return _.repeat(s, times);
-    //   };
-    // });
-
     var fn = parse('"hello" | repeat:3');
     expect(fn()).toEqual('hellohellohello');
   });
@@ -711,12 +694,6 @@ describe("parse", function() {
         };
       });
     }]).get('$parse');
-
-    // register('surround', function() {
-    //   return function(s, left, right) {
-    //     return left + s + right;
-    //   };
-    // });
 
     var fn = parse('"hello" | surround:"*":"!"');
     expect(fn()).toEqual('*hello!');
