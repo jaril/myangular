@@ -1615,4 +1615,93 @@ describe('$compile', function() {
     });
 
   });
+
+  describe('controllers', function() {
+
+    it('can be attached to directives as functions', function() {
+      var controllerInvoked;
+      var injector = makeInjectorWithDirectives('myDirective', function() {
+        return {
+          controller: function MyController() {
+            controllerInvoked = true;
+          }
+        };
+      });
+      injector.invoke(function($compile, $rootScope) {
+        var el = $('<div my-directive></div>');
+        $compile(el)($rootScope);
+        expect(controllerInvoked).toBe(true);
+      });
+    });
+  });
+
+  it('can be attached to directives as string references', function() {
+    var controllerInvoked;
+    function MyController() {
+      controllerInvoked = true;
+    }
+    var injector = createInjector(['ng',
+        function($controllerProvider, $compileProvider) {
+      $controllerProvider.register('MyController', MyController);
+      $compileProvider.directive('myDirective', function() {
+        return {controller: 'MyController'};
+      });
+    }]);
+    injector.invoke(function($compile, $rootScope) {
+      var el = $('<div my-directive></div>');
+      $compile(el)($rootScope);
+      expect(controllerInvoked).toBe(true);
+    });
+  });
+
+  it('can be applied in the same element independent of each other', function() {
+    var controllerInvoked;
+    var otherControllerInvoked;
+    function MyController() {
+      controllerInvoked = true;
+    }
+    function MyOtherController() {
+      otherControllerInvoked = true;
+    }
+    var injector = createInjector(['ng',
+    function($controllerProvider, $compileProvider) {
+      $controllerProvider.register('MyController', MyController);
+      $controllerProvider.register('MyOtherController', MyOtherController);
+      $compileProvider.directive('myDirective', function() {
+        return {controller: 'MyController'};
+      });
+      $compileProvider.directive('myOtherDirective', function() {
+        return {controller: 'MyOtherController'};
+      });
+    }]);
+    injector.invoke(function($compile, $rootScope) {
+      var el = $('<div my-directive my-other-directive></div>');
+      $compile(el)($rootScope);
+      expect(controllerInvoked).toBe(true);
+      expect(otherControllerInvoked).toBe(true);
+    });
+  });
+
+  it('can be applied to different directives, as different instances', function() {
+    var invocations = 0;
+    function MyController() {
+      invocations++;
+    }
+    var injector = createInjector(['ng',
+    function($controllerProvider, $compileProvider) {
+      $controllerProvider.register('MyController', MyController);
+      $compileProvider.directive('myDirective', function() {
+        return {controller: 'MyController'};
+      });
+      $compileProvider.directive('myOtherDirective', function() {
+        return {controller: 'MyController'};
+      });
+    }]);
+    injector.invoke(function($compile, $rootScope) {
+      var el = $('<div my-directive my-other-directive></div>');
+      $compile(el)($rootScope);
+      expect(invocations).toBe(2);
+    });
+  });
+
 });

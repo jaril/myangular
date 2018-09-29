@@ -2,6 +2,7 @@
 
 var publishExternalAPI = require('../src/angular_public');
 var createInjector = require('../src/injector');
+var $ = require('jquery');
 
 describe('$controller', function() {
 
@@ -115,6 +116,26 @@ describe('$controller', function() {
 
     expect(controller).toBeDefined();
     expect(controller instanceof window.MyController).toBe(true);
+  });
+
+  it('can be aliased with @ when given in directive attribute', function() {
+    var controllerInvoked;
+    function MyController() {
+      controllerInvoked = true;
+    }
+    var injector = createInjector(['ng',
+    function($controllerProvider, $compileProvider) {
+      $controllerProvider.register('MyController', MyController);
+      $compileProvider.directive('myDirective', function() {
+        return {controller: '@'};
+      });
+    }]);
+
+    injector.invoke(function($compile, $rootScope) {
+      var el = $('<div my-directive="MyController"></div>');
+      $compile(el)($rootScope);
+      expect(controllerInvoked).toBe(true);
+    });
   });
 
 });

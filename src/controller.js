@@ -9,7 +9,7 @@ function $ControllerProvider() {
 
   this.allowGlobals = function() {
     globals = true;
-  }
+  };
 
   this.register = function(name, controller) {
     if (_.isObject(name)) {
@@ -24,7 +24,7 @@ function $ControllerProvider() {
       if (_.isString(ctrl)) {
         if (controllers.hasOwnProperty(ctrl)) {
           ctrl = controllers[ctrl];
-        } else {
+        } else if (globals) {
           ctrl = window[ctrl];
         }
       }
