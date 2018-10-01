@@ -162,4 +162,24 @@ describe('$controller', function() {
     });
   });
 
+  it('can be attached on the scope', function() {
+    function MyController() { }
+    var injector = createInjector(['ng',
+    function($controllerProvider, $compileProvider) {
+      $controllerProvider.register('MyController', MyController);
+      $compileProvider.directive('myDirective', function() {
+        return {
+          controller: 'MyController',
+          controllerAs: 'myCtrl'
+        };
+      });
+    }]);
+    injector.invoke(function($compile, $rootScope) {
+      var el = $('<div my-directive></div>');
+      $compile(el)($rootScope);
+      expect($rootScope.myCtrl).toBeDefined();
+      expect($rootScope.myCtrl instanceof MyController).toBe(true);
+    });
+  });
+
 });

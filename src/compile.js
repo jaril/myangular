@@ -452,7 +452,7 @@ function $CompileProvider($provide) {
             if (controllerName === '@') {
               controllerName = attrs[directive.name];
             }
-            $controller(controllerName, locals);
+            $controller(controllerName, locals, directive.controllerAs);
           });
         }
 
