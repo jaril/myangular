@@ -85,6 +85,7 @@ function $CompileProvider($provide) {
             directive.$$bindings = parseDirectiveBindings(directive);
             directive.name = directive.name || name;
             directive.index = i;
+            directive.require = directive.require || (directive.controller && name);
             if (directive.link && !directive.compile) {
               directive.compile = _.constant(directive.link);
             }
