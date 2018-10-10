@@ -31,6 +31,9 @@ function $ControllerProvider() {
   this.$get = ['$injector', function($injector) {
     return function(ctrl, locals, later, identifier) { //the provider returns a function
       if (_.isString(ctrl)) {
+      var match = ctrl.match(/^(\S+)(\s+as\s+(\w+))?/);
+      ctrl = match[1];
+      identifier = identifier || match[3];
         if (controllers.hasOwnProperty(ctrl)) {
           ctrl = controllers[ctrl];
         } else if (globals) {
@@ -56,7 +59,7 @@ function $ControllerProvider() {
         instance = $injector.instantiate(ctrl, locals);
         if (identifier) {
           //pass locals since scope reference is a locals property
-          addToScope(locals, identifier, instance)
+          addToScope(locals, identifier, instance);
         }
 
         return instance; //the function is $controller, return obj

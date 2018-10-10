@@ -43,7 +43,7 @@ describe('ngController', function() {
       expect(gotAttrs).toBeDefined();
     });
   });
-  
+
   //inherited scope is of the $rootScope
   it('has an inherited scope', function() {
     var gotScope;
@@ -59,6 +59,22 @@ describe('ngController', function() {
       expect(gotScope).not.toBe($rootScope);
       expect(gotScope.$parent).toBe($rootScope);
       expect(Object.getPrototypeOf(gotScope)).toBe($rootScope);
+    });
+  });
+
+  it('allows aliasing controller in expression', function() {
+    var gotScope;
+    function MyController($scope) {
+      gotScope = $scope;
+    }
+    var injector = createInjector(['ng', function($controllerProvider) {
+      $controllerProvider.register('MyController', MyController);
+    }]);
+    injector.invoke(function($compile, $rootScope) {
+      var el = $('<div ng-controller="MyController as myCtrl"></div>');
+      $compile(el)($rootScope);
+      expect(gotScope.myCtrl).toBeDefined();
+      expect(gotScope.myCtrl instanceof MyController).toBe(true);
     });
   });
 
