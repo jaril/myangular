@@ -540,6 +540,10 @@ function $CompileProvider($provide) {
           terminalPriority = directive.priority;
         }
 
+        if (directive.template) {
+          $compileNode.html(directive.template);
+        }
+
         if (directive.controller) {
           controllerDirectives = controllerDirectives || {};
           controllerDirectives[directive.name] = directive;
