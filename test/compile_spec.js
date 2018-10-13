@@ -1770,6 +1770,27 @@ describe('$compile', function() {
       });
     });
 
+    it('supports functions as template values', function() {
+      var templateSpy = jasmine.createSpy()
+        .and.returnValue('<div class="from-template"></div>');
+
+      var injector = makeInjectorWithDirectives({
+        myDirective: function() {
+          return {
+            template: templateSpy
+          };
+        }
+      });
+      injector.invoke(function($compile) {
+        var el = $('<div my-directive></div>');
+        $compile(el);
+        expect(el.find('> .from-template').length).toBe(1);
+        // Check that template function was called with element and attrs
+        expect(templateSpy.calls.first().args[0][0]).toBe(el[0]);
+        expect(templateSpy.calls.first().args[1].myDirective).toBeDefined();
+      });
+    });
+
   });
 
 });

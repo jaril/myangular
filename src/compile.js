@@ -541,12 +541,15 @@ function $CompileProvider($provide) {
           terminalPriority = directive.priority;
         }
 
+
         if (directive.template) {
           if (templateDirective) {
             throw 'Multiple directives asking for template';
           }
           templateDirective = directive;
-          $compileNode.html(directive.template);
+          $compileNode.html(_.isFunction(directive.template) ?
+                            directive.template($compileNode, attrs) :
+                            directive.template);
         }
 
         if (directive.controller) {
