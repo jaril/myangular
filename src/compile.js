@@ -546,7 +546,7 @@ function $CompileProvider($provide) {
             throw 'Multiple directives asking for template';
           }
           templateDirective = directive;
-          compileTemplateUrl(
+          nodeLinkFn = compileTemplateUrl(
             _.drop(directives, i),
             $compileNode,
             attrs,
@@ -582,14 +582,29 @@ function $CompileProvider($provide) {
         var templateUrl = _.isFunction(origAsyncDirective.templateUrl) ?
                              origAsyncDirective.templateUrl($compileNode, attrs) :
                              origAsyncDirective.templateUrl;
+        var afterTemplateNodeLinkFn, afterTemplateChildLinkFn;
         $compileNode.empty();
+        var linkQueue = [];
         $http.get(templateUrl).success(function(template) {
           $compileNode.html(template);
           directives.unshift(derivedSyncDirective);
-          applyDirectivesToNode(
+          afterTemplateNodeLinkFn = applyDirectivesToNode(
             directives, $compileNode, attrs, previousCompileContext);
-          compileNodes($compileNode[0].childNodes);
+          afterTemplateChildLinkFn = compileNodes($compileNode[0].childNodes);
+          _.forEach(linkQueue, function(linkCall) {
+            afterTemplateNodeLinkFn(
+              afterTemplateChildLinkFn, linkCall.scope, linkCall.linkNode);
+          });
+          linkQueue = null;
         });
+
+        return function delayedNodeLinkFn(_ignoreChildLinkFn, scope, linkNode) {
+          if (linkQueue) {
+            linkQueue.push({scope: scope, linkNode: linkNode});
+          } else {
+            afterTemplateNodeLinkFn(afterTemplateChildLinkFn, scope, linkNode);
+          }
+        };
       }
 
       function nodeLinkFn(childLinkFn, scope, linkNode) {
