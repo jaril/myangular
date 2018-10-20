@@ -448,6 +448,9 @@ function $CompileProvider($provide) {
       var postLinkFns = previousCompileContext.postLinkFns || [];
       var controllers = {};
       var newScopeDirective, newIsolateScopeDirective;
+      //note, removed variable declaration here
+      //linting throws a notice otherwise
+      newIsolateScopeDirective = previousCompileContext.newIsolateScopeDirective;
       var templateDirective = previousCompileContext.templateDirective;
       var controllerDirectives;
 
@@ -554,6 +557,7 @@ function $CompileProvider($provide) {
             attrs,
             {
               templateDirective: templateDirective,
+              newIsolateScopeDirective: newIsolateScopeDirective,
               preLinkFns: preLinkFns,
               postLinkFns: postLinkFns
             });
