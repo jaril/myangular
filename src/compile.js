@@ -452,8 +452,8 @@ function $CompileProvider($provide) {
       //linting throws a notice otherwise
       newIsolateScopeDirective = previousCompileContext.newIsolateScopeDirective;
       var templateDirective = previousCompileContext.templateDirective;
-      var controllerDirectives;
-
+      var controllerDirectives = previousCompileContext.controllerDirectives;
+      
       function getControllers(require, $element) {
         if (_.isArray(require)) {
           return _.map(require, getControllers);
@@ -558,6 +558,7 @@ function $CompileProvider($provide) {
             {
               templateDirective: templateDirective,
               newIsolateScopeDirective: newIsolateScopeDirective,
+              controllerDirectives: controllerDirectives,
               preLinkFns: preLinkFns,
               postLinkFns: postLinkFns
             });
