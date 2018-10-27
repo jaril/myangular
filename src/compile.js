@@ -484,7 +484,8 @@ function $CompileProvider($provide) {
       newIsolateScopeDirective = previousCompileContext.newIsolateScopeDirective;
       var templateDirective = previousCompileContext.templateDirective;
       var controllerDirectives = previousCompileContext.controllerDirectives;
-      var childTranscludeFn, hasTranscludeDirective;
+      var hasTranscludeDirective = previousCompileContext.hasTranscludeDirective;
+      var childTranscludeFn;
 
       function getControllers(require, $element) {
         if (_.isArray(require)) {
@@ -606,7 +607,8 @@ function $CompileProvider($provide) {
               newIsolateScopeDirective: newIsolateScopeDirective,
               controllerDirectives: controllerDirectives,
               preLinkFns: preLinkFns,
-              postLinkFns: postLinkFns
+              postLinkFns: postLinkFns,
+              hasTranscludeDirective: hasTranscludeDirective
             });
           return false;
         } else if (directive.compile) {
@@ -629,7 +631,10 @@ function $CompileProvider($provide) {
         var derivedSyncDirective = _.extend(
           {},
           origAsyncDirective,
-          {templateUrl: null}
+          {
+            templateUrl: null,
+            transclude: null
+          }
         );
         var templateUrl = _.isFunction(origAsyncDirective.templateUrl) ?
                              origAsyncDirective.templateUrl($compileNode, attrs) :
@@ -645,16 +650,24 @@ function $CompileProvider($provide) {
           afterTemplateChildLinkFn = compileNodes($compileNode[0].childNodes);
           _.forEach(linkQueue, function(linkCall) {
             afterTemplateNodeLinkFn(
-              afterTemplateChildLinkFn, linkCall.scope, linkCall.linkNode);
+              afterTemplateChildLinkFn,
+              linkCall.scope,
+              linkCall.linkNode,
+              linkCall.boundTranscludeFn
+            );
           });
           linkQueue = null;
         });
 
-        return function delayedNodeLinkFn(_ignoreChildLinkFn, scope, linkNode) {
+        return function delayedNodeLinkFn(_ignoreChildLinkFn, scope, linkNode, boundTranscludeFn) {
           if (linkQueue) {
-            linkQueue.push({scope: scope, linkNode: linkNode});
+            linkQueue.push({
+              scope: scope,
+              linkNode: linkNode,
+              boundTranscludeFn: boundTranscludeFn
+            });
           } else {
-            afterTemplateNodeLinkFn(afterTemplateChildLinkFn, scope, linkNode);
+            afterTemplateNodeLinkFn(afterTemplateChildLinkFn, scope, linkNode, boundTranscludeFn);
           }
         };
       }
@@ -697,62 +710,6 @@ function $CompileProvider($provide) {
             isolateScope
           );
         }
-
-        // if (newIsolateScopeDirective) {
-        //   isolateScope = scope.$new(true);
-        //   $element.addClass('ng-isolate-scope');
-        //   $element.data('$isolateScope', isolateScope);
-          // _.forEach(newIsolateScopeDirective.$$isolateBindings,
-          //   function(definition, scopeName) {
-          //     var attrName = definition.attrName;
-          //     switch(definition.mode) {
-          //       case '@':
-          //         attrs.$observe(attrName, function(newAttrValue) {
-          //           isolateScope[scopeName] = newAttrValue;
-          //         });
-          //         if (attrs[attrName]) {
-          //           isolateScope[scopeName] = attrs[attrName];
-          //         }
-          //         break;
-          //       case '=':
-          //         if (definition.optional && !attrs[attrName]) {
-          //           break;
-          //         }
-          //         var parentGet = $parse(attrs[attrName]);
-          //         var lastValue = isolateScope[scopeName] = parentGet(scope);
-          //         var parentValueWatch = function() {
-          //           var parentValue = parentGet(scope);
-          //           if (isolateScope[scopeName] !== parentValue) {
-          //             if (parentValue !== lastValue) {
-          //               isolateScope[scopeName] = parentValue;
-          //             } else {
-          //               parentValue = isolateScope[scopeName];
-          //               parentGet.assign(scope, parentValue);
-          //             }
-          //           }
-          //           lastValue = parentValue;
-          //           return lastValue;
-          //         };
-          //         var unwatch;
-          //         if (definition.collection) {
-          //           unwatch = scope.$watchCollection(attrs[attrName], parentValueWatch);
-          //         } else {
-          //           unwatch = scope.$watch(parentValueWatch);
-          //         }
-          //         isolateScope.$on('$destroy', unwatch);
-          //         break;
-          //       case '&':
-          //         var parentExpr = $parse(attrs[attrName]);
-          //         if (parentExpr === _.noop && definition.optional) {
-          //           break;
-          //         }
-          //         isolateScope[scopeName] = function(locals) {
-          //           return parentExpr(scope, locals);
-          //         };
-          //         break;
-          //     }
-          // });
-        // }
 
         var scopeDirective = newIsolateScopeDirective || newScopeDirective;
 
