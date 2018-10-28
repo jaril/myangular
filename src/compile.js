@@ -463,9 +463,9 @@ function $CompileProvider($provide) {
     }
 
     function groupElementsLinkFnWrapper(linkFn, attrStart, attrEnd) {
-      return function(scope, element, attrs, ctrl) {
+      return function(scope, element, attrs, ctrl, transclude) {
         var group = groupScan(element[0], attrStart, attrEnd);
-        return linkFn(scope, group, attrs, ctrl);
+        return linkFn(scope, group, attrs, ctrl, transclude);
       };
     }
 
@@ -726,11 +726,6 @@ function $CompileProvider($provide) {
         _.forEach(controllers, function(controller) {
           controller();
         });
-
-        //remove for now since we are passing one in as the 4th arg
-        // function boundTranscludeFn() {
-        //   return childTranscludeFn(scope);
-        // }
 
         function scopeBoundTranscludeFn(transcludedScope, cloneAttachFn) {
           if (!transcludedScope || !transcludedScope.$watch ||
