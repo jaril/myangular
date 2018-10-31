@@ -229,6 +229,7 @@ function $CompileProvider($provide) {
       return function publicLinkFn(scope, cloneAttachFn, options) {
         options = options || {};
         var parentBoundTranscludeFn = options.parentBoundTranscludeFn;
+        var transcludeControllers = options.transcludeControllers;
         if (parentBoundTranscludeFn && parentBoundTranscludeFn.$$boundTransclude) {
           parentBoundTranscludeFn = parentBoundTranscludeFn.$$boundTransclude;
         }
@@ -239,6 +240,9 @@ function $CompileProvider($provide) {
         } else {
           $linkNodes = $compileNodes;
         }
+        _.forEach(transcludeControllers, function(controller, name) {
+          $linkNodes.data('$' + name + 'Controller', controller.instance);
+        });
         $linkNodes.data('$scope', scope);
         compositeLinkFn(scope, $linkNodes, parentBoundTranscludeFn);
         return $linkNodes;
@@ -292,11 +296,13 @@ function $CompileProvider($provide) {
 
             var boundTranscludeFn;
             if (linkFn.nodeLinkFn.transcludeOnThisElement) {
-              boundTranscludeFn = function(transcludedScope, cloneAttachFn, containingScope) {
+              boundTranscludeFn = function(transcludedScope, cloneAttachFn, transcludeControllers, containingScope) {
                 if (!transcludedScope) {
                   transcludedScope = scope.$new(false, containingScope);
                 }
-                return linkFn.nodeLinkFn.transclude(transcludedScope, cloneAttachFn);
+                return linkFn.nodeLinkFn.transclude(transcludedScope, cloneAttachFn, {
+                  transcludeControllers: transcludeControllers
+                });
               };
             } else if (parentBoundTranscludeFn) {
               boundTranscludeFn = parentBoundTranscludeFn;
@@ -425,7 +431,7 @@ function $CompileProvider($provide) {
         var foundDirectives = $injector.get(name + 'Directive');
         var applicableDirectives = _.filter(foundDirectives, function(dir) {
           return (maxPriority === undefined || maxPriority > dir.priority) &&
-            dir.restrict.indexOf(mode) !== -1;
+                  dir.restrict.indexOf(mode) !== -1;
         });
         _.forEach(applicableDirectives, function(directive) {
           if (attrStartName) {
@@ -487,6 +493,7 @@ function $CompileProvider($provide) {
       var controllerDirectives = previousCompileContext.controllerDirectives;
       var hasTranscludeDirective = previousCompileContext.hasTranscludeDirective;
       var childTranscludeFn;
+      var hasElementTranscludeDirective;
 
       function getControllers(require, $element) {
         if (_.isArray(require)) {
@@ -575,18 +582,18 @@ function $CompileProvider($provide) {
         }
 
         if (directive.transclude) {
+          hasElementTranscludeDirective = true;
           if (hasTranscludeDirective) {
             throw 'Multiple directives asking for transclude';
           }
           hasTranscludeDirective = true;
           if (directive.transclude === 'element') {
             var $originalCompileNode = $compileNode;
-            $compileNode = $(document.createComment(
+            $compileNode = attrs.$$element = $(document.createComment(
               ' ' + directive.name + ': ' + attrs[directive.name] + ' '
             ));
             $originalCompileNode.replaceWith($compileNode);
             terminalPriority = directive.priority;
-            compile($originalCompileNode, terminalPriority);
             childTranscludeFn = compile($originalCompileNode, terminalPriority);
           } else {
             var $transcludedNodes = $compileNode.clone().contents();
@@ -740,12 +747,17 @@ function $CompileProvider($provide) {
         });
 
         function scopeBoundTranscludeFn(transcludedScope, cloneAttachFn) {
+          var transcludeControllers;
           if (!transcludedScope || !transcludedScope.$watch ||
               !transcludedScope.$evalAsync) {
             cloneAttachFn = transcludedScope;
             transcludedScope = undefined;
           }
-          return boundTranscludeFn(transcludedScope, cloneAttachFn, scope);
+          if (hasElementTranscludeDirective) {
+            transcludeControllers = controllers;
+          }
+          return boundTranscludeFn(
+            transcludedScope, cloneAttachFn, transcludeControllers, scope);
         }
 
         scopeBoundTranscludeFn.$$boundTransclude = boundTranscludeFn;
