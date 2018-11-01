@@ -10,7 +10,7 @@ function $InterpolateProvider() {
       var index = 0;
       var parts = [];
       var startIndex, endIndex, exp, expFn;
-      var hasExpressions = false;
+      var expressions = [];
       while (index < text.length) {
         startIndex = text.indexOf('{{', index);
         // endIndex = text.indexOf('}}', index);
@@ -24,7 +24,7 @@ function $InterpolateProvider() {
           exp = text.substring(startIndex + 2, endIndex);
           expFn = $parse(exp);
           parts.push(expFn);
-          hasExpressions = true;
+          expressions.push(exp);
           index = endIndex + 2;
         } else {
           parts.push(unescapeText(text.substring(index)));
@@ -47,8 +47,8 @@ function $InterpolateProvider() {
           .replace(/\\}\\}/g, '}}');
       }
 
-      if (!mustHaveExpressions || hasExpressions) {
-        return function interpolationFn(context) {
+      if (!mustHaveExpressions || expressions.length) {
+        return _.extend(function interpolationFn(context) {
           return _.reduce(parts, function(result, part) {
             if (_.isFunction(part)) {
               return result + stringify(part(context));
@@ -56,7 +56,9 @@ function $InterpolateProvider() {
               return result + part;
             }
           }, '');
-        };
+        }, {
+          expressions: expressions
+        });
       }
 
     }
