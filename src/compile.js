@@ -103,7 +103,33 @@ function $CompileProvider($provide) {
 
   this.$get = ['$injector', '$parse', '$controller', '$rootScope',
               '$http', '$interpolate',
-    function($injector, $parse, $controller, $rootScope, $http, $interpolate) {
+  function($injector, $parse, $controller, $rootScope, $http, $interpolate) {
+
+    var startSymbol = $interpolate.startSymbol();
+    var endSymbol = $interpolate.endSymbol();
+
+    //refactored this part in case anything breaks later look at configurable
+    //interpolation symbols
+    /*
+    var denormalizeTemplate = (startSymbol === '{{' && endSymbol === '}}') ?
+    _.identity :
+    function(template) {
+      return template.replace(/\{\{/g, startSymbol)
+      .replace(/\}\}/g, endSymbol);
+    };
+    */
+
+    var denormalizeTemplate;
+    if (startSymbol === '{{' && endSymbol === '}}') {
+      //identity just returns the first argument it receives
+      denormalizeTemplate = _.identity
+    } else {
+      denormalizeTemplate = function(template) {
+        //default is (( ))
+        return template.replace(/\{\{/g, startSymbol)
+          .replace(/\}\}/g, endSymbol);
+      };
+    }
 
     function Attributes(element) {
       this.$$element = element;
@@ -670,9 +696,13 @@ function $CompileProvider($provide) {
             throw 'Multiple directives asking for template';
           }
           templateDirective = directive;
-          $compileNode.html(_.isFunction(directive.template) ?
-                            directive.template($compileNode, attrs) :
-                            directive.template);
+
+          var template = _.isFunction(directive.template) ?
+            directive.template($compileNode, attrs) :
+            directive.template;
+
+          template = denormalizeTemplate(template);
+          $compileNode.html(template);
         }
 
         if (directive.templateUrl) {
@@ -725,6 +755,7 @@ function $CompileProvider($provide) {
         $compileNode.empty();
         var linkQueue = [];
         $http.get(templateUrl).success(function(template) {
+          template = denormalizeTemplate(template);
           $compileNode.html(template);
           directives.unshift(derivedSyncDirective);
           afterTemplateNodeLinkFn = applyDirectivesToNode(

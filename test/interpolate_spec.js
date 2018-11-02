@@ -2,6 +2,7 @@
 
 var publishExternalAPI = require('../src/angular_public');
 var createInjector = require('../src/injector');
+var $ = require('jquery');
 
 describe('$interpolate', function() {
 
@@ -134,6 +135,66 @@ describe('$interpolate', function() {
 
     expect(listenerSpy.calls.mostRecent().args[0]).toEqual('43');
     expect(listenerSpy.calls.mostRecent().args[1]).toEqual('42');
+  });
+
+  it('allows configuring start and end symbols', function() {
+    var injector = createInjector(['ng', function($interpolateProvider) {
+      $interpolateProvider.startSymbol('FOO').endSymbol('OOF');
+    }]);
+
+    var $interpolate = injector.get('$interpolate');
+    expect($interpolate.startSymbol()).toEqual('FOO');
+    expect($interpolate.endSymbol()).toEqual('OOF');
+  });
+
+  it('works with start and end symbols that differ from default', function() {
+    var injector = createInjector(['ng', function($interpolateProvider) {
+      $interpolateProvider.startSymbol('FOO').endSymbol('OOF');
+    }]);
+
+    var $interpolate = injector.get('$interpolate');
+    var interpFn = $interpolate('FOOmyExprOOF');
+    expect(interpFn({myExpr: 42})).toEqual('42');
+  });
+
+  it('does not work with default symbols when reconfigured', function() {
+    var injector = createInjector(['ng', function($interpolateProvider) {
+      $interpolateProvider.startSymbol('FOO').endSymbol('OOF');
+    }]);
+
+    var $interpolate = injector.get('$interpolate');
+    var interpFn = $interpolate('{{myExpr}}');
+    expect(interpFn({myExpr: 42})).toEqual('{{myExpr}}');
+  });
+
+  it('supports unescaping for reconfigured symbols', function() {
+    var injector = createInjector(['ng', function($interpolateProvider) {
+      $interpolateProvider.startSymbol('FOO').endSymbol('OOF');
+    }]);
+
+    var $interpolate = injector.get('$interpolate');
+    var interpFn = $interpolate('\\F\\O\\OmyExpr\\O\\O\\F');
+    expect(interpFn({})).toEqual('FOOmyExprOOF');
+  });
+
+  it('denormalizes directive templates', function() {
+    var injector = createInjector(['ng',
+    function($interpolateProvider, $compileProvider) {
+      $interpolateProvider.startSymbol('[[').endSymbol(']]');
+      $compileProvider.directive('myDirective', function() {
+        return {
+          template: 'Value is {{myExpr}}'
+        };
+      });
+    }]);
+
+    injector.invoke(function($compile, $rootScope) {
+      var el = $('<div my-directive></div>');
+      $rootScope.myExpr = 42;
+      $compile(el)($rootScope);
+      $rootScope.$apply();
+      expect(el.html()).toEqual('Value is 42');
+    });
   });
 
 });
