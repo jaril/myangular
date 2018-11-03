@@ -1,11 +1,11 @@
+'use strict';
 var setupModuleLoader = require('./loader');
 
 function publishExternalAPI() {
-  'use strict';
 
   setupModuleLoader(window);
 
-  var ngModule = angular.module('ng', []);
+  var ngModule = window.angular.module('ng', []);
   ngModule.provider('$filter', require('./filter'));
   ngModule.provider('$parse', require('./parse'));
   ngModule.provider('$rootScope', require('./scope'));
@@ -20,12 +20,9 @@ function publishExternalAPI() {
   ngModule.provider('$compile', require('./compile'));
   ngModule.provider('$controller', require('./controller'));
   ngModule.provider('$interpolate', require('./interpolate'));
-  ngModule.directive('ngController',
-    require('./directives/ng_controller'));
-  ngModule.directive('ngTransclude',
-    require('./directives/ng_transclude'));
-  ngModule.directive('ngClick',
-    require('./directives/ng_click'));
+  ngModule.directive('ngController', require('./directives/ng_controller'));
+  ngModule.directive('ngTransclude', require('./directives/ng_transclude'));
+  ngModule.directive('ngClick', require('./directives/ng_click'));
 }
 
 module.exports = publishExternalAPI;
